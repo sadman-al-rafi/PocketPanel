@@ -187,7 +187,7 @@ jobs:
   emulator:
     name: Emulator launch and UI tests
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 50
     needs: build
 
     steps:
@@ -221,8 +221,18 @@ jobs:
             echo "Emulator binary:"
             ls -l "$ANDROID_HOME/emulator/emulator" 2>&1 || true
             echo
+            echo "Emulator version:"
+            "$ANDROID_HOME/emulator/emulator" -version 2>&1 | head -5 || true
+            echo
             echo "cmdline-tools:"
-            find "$ANDROID_HOME/cmdline-tools" -maxdepth 2 -name sdkmanager 2>/dev/null || true
+            find "$ANDROID_HOME/cmdline-tools" -maxdepth 4 -name sdkmanager 2>/dev/null || true
+            find "$ANDROID_HOME/cmdline-tools" -maxdepth 4 -name avdmanager 2>/dev/null || true
+            echo
+            echo "Installed system images:"
+            ls "$ANDROID_HOME/system-images" 2>/dev/null || true
+            echo
+            echo "Java:"
+            java -version 2>&1 | head -3 || true
           } | tee "$RUNNER_TEMP/emulator/environment.txt"
 
       - name: Enable KVM access
@@ -234,30 +244,48 @@ jobs:
           test -e /dev/kvm
 
       - name: Install emulator and API 36 system image
+        timeout-minutes: 12
         run: |
           set -euo pipefail
-          SDKMANAGER="$(command -v sdkmanager || find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -1)"
+          SDKMANAGER="$(command -v sdkmanager || find "$ANDROID_HOME/cmdline-tools" -maxdepth 4 -name sdkmanager -type f | head -1)"
+          test -n "$SDKMANAGER"
           echo "sdkmanager: $SDKMANAGER"
-          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          yes | "$SDKMANAGER" --licenses > "$RUNNER_TEMP/emulator/licenses.log" 2>&1 || true
           "$SDKMANAGER" --install \
             "emulator" \
             "platform-tools" \
             "system-images;android-36;google_apis;x86_64" 2>&1 \
             | tee "$RUNNER_TEMP/emulator/install.log"
+          test -x "$ANDROID_HOME/emulator/emulator"
+          test -d "$ANDROID_HOME/system-images/android-36/google_apis/x86_64"
+          "$ANDROID_HOME/emulator/emulator" -version 2>&1 \
+            | tee -a "$RUNNER_TEMP/emulator/install.log"
 
       - name: Create the AVD
+        timeout-minutes: 5
         run: |
           set -euo pipefail
-          AVDMANAGER="$(command -v avdmanager || find "$ANDROID_HOME/cmdline-tools" -name avdmanager -type f | head -1)"
-          echo no | "$AVDMANAGER" create avd --force \
+          AVDMANAGER="$(command -v avdmanager || find "$ANDROID_HOME/cmdline-tools" -maxdepth 4 -name avdmanager -type f | head -1)"
+          test -n "$AVDMANAGER"
+          echo "avdmanager: $AVDMANAGER"
+          mkdir -p "$HOME/.android/avd"
+          # avdmanager can read stdin twice (license review, then the custom
+          # hardware profile) and loops on EOF. A fixed answer stream avoids
+          # waiting forever; the stream is small enough not to raise SIGPIPE.
+          printf 'no\nno\nno\nno\n' | "$AVDMANAGER" create avd --force \
             --name pocketpanel \
             --package "system-images;android-36;google_apis;x86_64" \
+            --abi x86_64 \
             --device "pixel_6" 2>&1 | tee "$RUNNER_TEMP/emulator/avd.log"
+          test -f "$HOME/.android/avd/pocketpanel.ini"
+          test -d "$HOME/.android/avd/pocketpanel.avd"
           ls -la "$HOME/.android/avd" | tee -a "$RUNNER_TEMP/emulator/avd.log"
 
       - name: Start the emulator
+        timeout-minutes: 3
         run: |
           set -euo pipefail
+          test -x "$ANDROID_HOME/emulator/emulator"
           nohup "$ANDROID_HOME/emulator/emulator" \
             -avd pocketpanel \
             -no-window -gpu swiftshader_indirect -no-snapshot \
@@ -266,13 +294,16 @@ jobs:
             > "$RUNNER_TEMP/emulator/emulator.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/emulator/emulator.pid"
           "$ANDROID_HOME/platform-tools/adb" start-server
+          sleep 10
+          "$ANDROID_HOME/platform-tools/adb" devices -l \
+            | tee "$RUNNER_TEMP/emulator/devices-started.txt"
 
       - name: Wait for Android to finish booting
         timeout-minutes: 15
         run: |
           set -euo pipefail
           timeout 120 "$ANDROID_HOME/platform-tools/adb" wait-for-device || true
-          for attempt in $(seq 1 180); do
+          for attempt in $(seq 1 150); do
             boot_completed="$("$ANDROID_HOME/platform-tools/adb" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
             echo "attempt=$attempt boot_completed=${boot_completed:-empty}" \
               | tee -a "$RUNNER_TEMP/emulator/boot.log"
@@ -295,12 +326,14 @@ jobs:
           "$ANDROID_HOME/platform-tools/adb" devices -l | tee "$RUNNER_TEMP/emulator/devices.txt"
 
       - name: Run instrumented tests
+        timeout-minutes: 20
         run: |
           set -o pipefail
           ./gradlew :app:connectedDebugAndroidTest --stacktrace 2>&1 \
             | tee "$RUNNER_TEMP/emulator/connectedDebugAndroidTest.log"
 
       - name: Verify a cold launch
+        timeout-minutes: 6
         run: |
           set -euo pipefail
           "$ANDROID_HOME/platform-tools/adb" shell am force-stop dev.pocketpanel
@@ -328,6 +361,12 @@ jobs:
             echo "== emulator.log (tail) =="
             tail -150 "$RUNNER_TEMP/emulator/emulator.log" 2>/dev/null
             echo
+            echo "== install.log (tail) =="
+            tail -40 "$RUNNER_TEMP/emulator/install.log" 2>/dev/null
+            echo
+            echo "== avd.log =="
+            cat "$RUNNER_TEMP/emulator/avd.log" 2>/dev/null
+            echo
             echo "== boot log =="
             cat "$RUNNER_TEMP/emulator/boot.log" 2>/dev/null
             echo
@@ -336,6 +375,9 @@ jobs:
             echo
             echo "== AVD directory =="
             ls -la "$HOME/.android/avd" 2>&1
+            echo
+            echo "== system image =="
+            ls "$ANDROID_HOME/system-images/android-36/google_apis/x86_64" 2>&1 | head -10
             echo
             echo "== crash buffer =="
             "$ANDROID_HOME/platform-tools/adb" logcat -b crash -d 2>&1 | tail -50

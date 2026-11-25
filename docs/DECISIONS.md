@@ -531,6 +531,14 @@ Observed during setup:
   minutes on the first attempt. Because the action hides its stages and
   the job log is not accessible without authentication, it was replaced
   with the explicit steps below.
+- The runner image has no emulator and no system image preinstalled
+  (`ANDROID_HOME=/usr/local/lib/android/sdk`, platforms up to
+  android-37.2, cmdline-tools 12.0). They must be installed.
+- `avdmanager create avd` with `echo no |` hung after
+  `Auto-selecting single ABI x86_64` and created no AVD: it reads stdin
+  more than once and loops on EOF. Fixed with a fixed multi-line answer
+  stream, an explicit `--abi x86_64`, a pre-created `$HOME/.android/avd`
+  directory, and a step timeout.
 
 Workflow stages (all logged under `ci-results/emulator/`):
 1. Record `ANDROID_HOME`, `/dev/kvm`, CPU virtualization flags and the
