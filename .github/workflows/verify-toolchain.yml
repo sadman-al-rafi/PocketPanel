@@ -7,7 +7,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: verify-toolchain-${{ github.ref }}
@@ -38,14 +38,7 @@ jobs:
       - name: Prepare log directory
         run: mkdir -p "$RUNNER_TEMP/logs"
 
-      - name: Install Android SDK packages
-        run: |
-          set -o pipefail
-          yes | sdkmanager --licenses > "$RUNNER_TEMP/logs/sdk-licenses.log" 2>&1 || true
-          sdkmanager "platform-tools" "platforms;android-37" "build-tools;36.0.0" \
-            2>&1 | tee "$RUNNER_TEMP/logs/sdkmanager.log"
-
-      - name: Record tool versions
+      - name: Record tool versions and preinstalled SDK
         run: |
           set -o pipefail
           {
@@ -54,11 +47,12 @@ jobs:
             gradle --version
             echo
             echo "ANDROID_HOME=${ANDROID_HOME:-unset}"
-            echo
             echo "Installed platforms:"
             ls "$ANDROID_HOME/platforms" 2>/dev/null || true
             echo "Installed build-tools:"
             ls "$ANDROID_HOME/build-tools" 2>/dev/null || true
+            echo "Installed platform-tools:"
+            ls "$ANDROID_HOME/platform-tools" 2>/dev/null | head -5 || true
           } 2>&1 | tee "$RUNNER_TEMP/logs/versions.log"
 
       - name: Resolve build environment
@@ -91,31 +85,81 @@ jobs:
           gradle :app:testDebugUnitTest --stacktrace 2>&1 \
             | tee "$RUNNER_TEMP/logs/testDebugUnitTest.log"
 
-      - name: Summarize resolved versions
+      - name: Build summary
         if: always()
         run: |
           {
-            echo "### Toolchain verification"
+            echo "# Toolchain verification"
             echo
-            echo "Kotlin stdlib resolved on debugCompileClasspath:"
+            echo "Result: \`${{ job.status }}\`"
+            echo
+            echo "## Resolved Kotlin / Compose entries"
             echo '```'
-            grep -E "kotlin-stdlib" \
+            grep -E "kotlin|compose" \
               "$RUNNER_TEMP/logs/dependencies-debugCompileClasspath.log" 2>/dev/null \
-              | sort -u | head -20 || true
+              | sort -u | head -40 || true
             echo '```'
             echo
-            echo "Kotlin entries on the app buildscript classpath:"
+            echo "## Buildscript Kotlin / AGP entries"
             echo '```'
-            grep -E "kotlin" "$RUNNER_TEMP/logs/buildEnvironment.log" 2>/dev/null \
-              | head -30 || true
+            grep -E "kotlin|com\\.android\\.tools\\.build" \
+              "$RUNNER_TEMP/logs/buildEnvironment.log" 2>/dev/null \
+              | head -40 || true
             echo '```'
             echo
-            echo "APK output:"
+            echo "## APK output"
             echo '```'
             find app/build/outputs/apk -type f 2>/dev/null || true
             echo '```'
           } | tee "$RUNNER_TEMP/logs/summary.md"
           cat "$RUNNER_TEMP/logs/summary.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Collect verification results
+        if: always()
+        run: |
+          set +e
+          mkdir -p ci-results
+          {
+            echo "commit: $GITHUB_SHA"
+            echo "run_id: $GITHUB_RUN_ID"
+            echo "run_number: $GITHUB_RUN_NUMBER"
+            echo "job_status: ${{ job.status }}"
+            echo "finished_utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo
+            echo "Steps with logs captured:"
+            ls -1 "$RUNNER_TEMP/logs" 2>/dev/null
+          } > ci-results/status.txt
+
+          cp "$RUNNER_TEMP/logs/versions.log" ci-results/versions.log 2>/dev/null
+          grep -E "kotlin|compose|com\\.android\\.tools\\.build" \
+            "$RUNNER_TEMP/logs/buildEnvironment.log" \
+            > ci-results/buildEnvironment-filtered.log 2>/dev/null
+          grep -E "kotlin|compose" \
+            "$RUNNER_TEMP/logs/dependencies-debugCompileClasspath.log" \
+            > ci-results/dependencies-filtered.log 2>/dev/null
+          tail -n 300 "$RUNNER_TEMP/logs/compileDebugKotlin.log" \
+            > ci-results/compile-tail.log 2>/dev/null
+          tail -n 150 "$RUNNER_TEMP/logs/assembleDebug.log" \
+            > ci-results/assemble-tail.log 2>/dev/null
+          tail -n 100 "$RUNNER_TEMP/logs/testDebugUnitTest.log" \
+            > ci-results/tests-tail.log 2>/dev/null
+          find app/build/outputs/apk -type f \
+            > ci-results/apk-files.txt 2>/dev/null
+          ls -l app/build/outputs/apk/debug \
+            >> ci-results/apk-files.txt 2>/dev/null
+          echo "collected"
+
+      - name: Publish results to the ci-results branch
+        if: always()
+        run: |
+          set +e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B ci-results
+          git add ci-results
+          git commit -m "Toolchain verification results (run $GITHUB_RUN_ID)"
+          git push --force origin ci-results
+          echo "publish exit: $?"
 
       - name: Upload debug APK
         if: success()
