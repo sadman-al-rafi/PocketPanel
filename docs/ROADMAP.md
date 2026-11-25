@@ -168,13 +168,13 @@ requires an authorized run (D016)
       APK hash from those runs predates the launcher-icon change.
 
 ### Verification Performed
-- Static checks: `scripts/check-static.sh`, 44 checks passing
+- Static checks: `scripts/check-static.sh`, 47 checks passing
   (2026-11-25). Structural only; no compiler involved.
 - Build/lint/unit tests: run 45637392750 (commit `cf600de`) and run
-  45646689211 (commit `6a59944`), both successful. App sources are
-  unchanged since `cf600de` except for the launcher icon added after
-  those runs, so a fresh authorized run is required before the APK is
-  called verified.
+  45646689211 (commit `6a59944`), both successful. App sources changed
+  after those runs (launcher icon, a lint `@ChecksSdkIntAtLeast`
+  annotation, one test import), so a fresh authorized run is required
+  before the APK is called verified.
 - Instrumented tests: written, never executed. No result is claimed.
 - Emulator launch: not attempted further; suspended by D016.
 
