@@ -65,8 +65,8 @@ Compatibility matrix:
 | JDK | 17 (LTS) | AGP requires 17 | AGP 9.5 notes | `jvmTarget = 17` |
 | Kotlin/KGP | 2.4.21 | Compose plugin must match | kotlinlang.org releases; Maven Central | Supplied through AGP built-in Kotlin |
 | Compose Compiler plugin | 2.4.21 | equal to Kotlin version | Compose compiler docs | Confirm effective version in M0b |
-| Compose BOM | 2026.11.01 | needs compileSdk 37 | BOM POM; BOM mapping page | Compose 1.13.0, Material3 1.5.0 |
-| compileSdk | 37 | AGP 9.5 supports 37 | Android 17 page | Required by Compose 1.13 |
+| Compose BOM | 2026.11.01 | needs compileSdk 37.1+ | BOM POM; AAR metadata (CI) | Compose 1.13.0, Material3 1.5.0 |
+| compileSdk | 37.1 | AGP 9.5 supports API 37 minors | CompileSdkSpec reference; CI AAR metadata check | Compose 1.13.0 AARs require 37.1+ |
 | targetSdk | 36 | Play requires ≥ 36 from 2026-08-31 | Play target API policy | Avoids early Android 17 opt-in |
 | minSdk | 26 | — | Android API level docs | Single overlay type |
 | Build Tools | 36.0.0 | AGP 9.5 min/default | AGP 9.5 notes | NDK not required |
@@ -84,7 +84,7 @@ Alternatives considered:
   9.6.0 as both minimum and default; a newer Gradle is untested by AGP.
 - Kotlin 2.5.0: rejected, only `2.5.0-RC2` is published.
 - Keeping an older AGP 8.x line: rejected because Compose 1.13 requires
-  AGP 9 and `compileSdk 37`.
+  AGP 9 and `compileSdk` 37.1.
 
 Reason: Newest stable combination that is mutually documented as
 compatible, without prerelease components.
@@ -117,7 +117,8 @@ item for M0b, not an assumption.
 
 Date: 2026-11-25
 
-Decision: `compileSdk 37`, `targetSdk 36`, `minSdk 26`.
+Decision: `compileSdk 37.1` (API 37, minor level 1), `targetSdk 36`,
+`minSdk 26`.
 
 Alternatives considered:
 - `minSdk 24`: would require legacy `TYPE_PHONE` overlay handling and
@@ -128,20 +129,38 @@ Alternatives considered:
 - `minSdk 31`: rejected, unnecessarily narrow.
 - `targetSdk 37`: rejected for now, because Android 17 behavior changes
   are not required and target 36 is the current Play requirement.
+- `compileSdk 37` (level 37.0): rejected after CI proved it is
+  insufficient. Compose 1.13.0 AAR metadata requires 37.1 or later.
 
 Reason: `minSdk 26` gives a single overlay window type and modern
-window behavior. `compileSdk 37` is required by Compose 1.13.
-`targetSdk 36` satisfies Google Play's requirement for new apps and
-updates from 2026-08-31 without adopting Android 17 behavior changes
-early.
+window behavior. `compileSdk 37.1` is required by Compose 1.13.0 AAR
+metadata; the first CI run failed AAR metadata checks for
+`androidx.compose.foundation:foundation-layout-android:1.13.0`,
+`androidx.compose.ui:ui-android:1.13.0` and related artifacts when
+compiled against `android-37.0`, and the second run passed after moving
+to `android-37.1`. `targetSdk 36` satisfies Google Play's requirement
+for new apps and updates from 2026-08-31 without adopting Android 17
+behavior changes early.
 
-Compatibility notes: AGP 9.5 max supported API is 37. Thermal and
-notification APIs above `minSdk` are gated by `Build.VERSION.SDK_INT`.
+Compatibility notes: AGP 9.5 supports API 37 including minor levels.
+Minor levels are configured with the documented AGP DSL:
+
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 1
+        }
+    }
+
+Thermal and notification APIs above `minSdk` are gated by
+`Build.VERSION.SDK_INT`. The `compileSdk` minor level does not change
+runtime behavior; it only exposes newer platform APIs.
 
 Verification sources:
+- https://developer.android.com/reference/tools/gradle-api/9.0/com/android/build/api/dsl/CompileSdkSpec
 - https://developer.android.com/about/versions/17
 - https://support.google.com/googleplay/android-developer/answer/11926878
 - https://developer.android.com/build/releases/agp-9-5-0-release-notes
+- CI run 45621464769 (`:app:assembleDebug` success against android-37.1)
 
 Consequences: Android 17-specific behavior is not exercised until
 `targetSdk` is raised in a later, separately authorized milestone.
@@ -322,25 +341,122 @@ Reason: Reproducible builds and traceable failures.
 
 Consequences: Upgrades are manual and deliberate.
 
+M0b note: the wrapper could not be generated in Termux because no JDK
+or Gradle is installed. The verification workflow therefore pins Gradle
+9.6.0 with `gradle/actions/setup-gradle@v6`. The wrapper itself is still
+required by this decision and must be committed in M1; until then,
+`./gradlew` does not exist in the repository.
+
 ### D012 — Build and Verification Environment
 
 Date: 2026-11-25
-Status: Proposed — requires user decision.
+Status: Accepted (user-approved).
 
-Decision: Not yet decided. The current development environment is
-Termux on aarch64 with no JDK and no Android SDK. Google does not
-publish Android SDK build-tools (including `aapt2`) for Linux aarch64,
-and the Termux `aapt2` package with `android.aapt2FromMavenOverride`
-is an unverified workaround.
+Decision: Compilation, test execution and APK generation run on
+GitHub-hosted x86_64 Ubuntu runners (`.github/workflows/verify-toolchain.yml`,
+`ubuntu-24.04`). OpenCode continues to run locally in Termux. No Android
+SDK, JDK or Gradle is installed locally, and no ARM build-tools or
+`aapt2` override is used.
+
+Verified by: CI run 45621464769 and run 45621953748, both
+`assembleDebug` successes on `ubuntu-24.04` with Temurin JDK 17.0.21 and
+Gradle 9.6.0.
 
 Alternatives considered:
 - Local Termux build with `openjdk-17` plus a manually assembled SDK and
-  the aapt2 override.
-- x86_64 CI runner executing `assembleDebug` and tests.
-- Building on a separate x86_64 development machine.
+  the `android.aapt2FromMavenOverride` workaround: rejected, Google does
+  not publish Linux aarch64 build-tools and the override is unverified.
+- A separate x86_64 development machine: valid but unavailable to the
+  current workflow.
 
-Reason: M0b acceptance requires a verified build, which cannot be
-claimed without a working toolchain.
+Reason: M0b requires a real, observed build. A pinned GitHub-hosted
+runner provides it without unreliable local tooling.
 
-Consequences: M0b stays blocked until a build path is approved.
-No installation is performed before that approval.
+Consequences:
+- Local commands cannot build the project; every build claim must come
+  from a workflow run with captured logs.
+- Build results are published to the `ci-results` branch and uploaded as
+  workflow artifacts, so results remain inspectable without console
+  access.
+- Repository secrets are not required; the workflow uses the default
+  `GITHUB_TOKEN` with `contents: write` only to push results.
+- Emulator or device launch testing is not covered by this environment
+  and remains unverified.
+
+### D013 — Toolchain Verification Results
+
+Date: 2026-11-25
+
+Decision: Accept the verified toolchain recorded in D005 with one
+correction: `compileSdk` is API 37.1, not 37.0. M0b build verification
+passed on GitHub Actions.
+
+Method: `.github/workflows/verify-toolchain.yml` on `ubuntu-24.04`,
+Gradle installed and pinned by `gradle/actions/setup-gradle@v6`
+(`gradle-version: 9.6.0`), Temurin JDK 17 via `actions/setup-java@v6`.
+The Android SDK is the one preinstalled on the runner image, which
+already contains `android-37.1` and `build-tools;36.0.0`. No SDK or JDK
+was installed locally.
+
+Resolved and confirmed by the build:
+
+| Component | Version observed |
+|---|---|
+| Android Gradle Plugin | 9.5.2 (`com.android.tools.build:gradle:9.5.2` on buildscript classpath) |
+| Gradle | 9.6.0 |
+| JDK | Eclipse Temurin 17.0.21+9 |
+| Kotlin Gradle plugin | 2.4.21 (upgraded from AGP's declared 2.2.10) |
+| Kotlin compiler | 2.4.21 (daemon classpath, run 45620584351) |
+| kotlin-stdlib (app) | 2.4.21 |
+| Compose compiler plugin | 2.4.21 (`kotlin-compose-compiler-plugin-embeddable`) |
+| Compose BOM | 2026.11.01 |
+| Compose UI/foundation/runtime | 1.13.0 |
+| Material3 | 1.5.0 |
+| activity-compose | 1.13.0 |
+| lifecycle-runtime-compose | 2.11.1 |
+| core-ktx | 1.19.1 |
+| compileSdk | API 37.1 (`android-37.1`) |
+| targetSdk | 36 |
+| minSdk | 26 |
+| Build Tools | 36.0.0 |
+
+Commanded results (run 45621953748, commit 3b2c0b1):
+
+- `gradle buildEnvironment` — success; classpath shows AGP 9.5.2,
+  KGP 2.4.21 and compose-compiler-gradle-plugin 2.4.21.
+- `gradle :app:dependencies --configuration debugCompileClasspath` —
+  success; resolves `kotlin-stdlib:2.4.21`, Compose BOM 2026.11.01,
+  Compose 1.13.0 and Material3 1.5.0.
+- `gradle :app:compileDebugKotlin --info` — success; Compose compiler
+  accepted Kotlin 2.4.21.
+- `gradle :app:assembleDebug` — success; `app-debug.apk`,
+  12,884,656 bytes,
+  sha256 `da26cee260c57aba22603a98602335d3f4ef533d4c7072077e3ae94122324250`.
+- `gradle :app:testDebugUnitTest` — `NO-SOURCE`; there are no tests yet,
+  so this is not evidence of passing tests.
+
+Findings:
+
+1. Compose 1.13.0 requires `compileSdk` 37.1+. Compiling against 37.0
+   failed the AAR metadata check with an explicit requirement for 37.1
+   or later. Fixed with the documented `compileSdk { release(37) { minorApiLevel = 1 } }`
+   block; see D006.
+2. AGP 9.5.2 declares a runtime dependency on KGP 2.2.10, so 2.4.21 is
+   not the default. The selected Kotlin version is applied explicitly via
+   AGP's documented higher-KGP buildscript classpath, and the resulting
+   buildscript classpath resolves to exactly 2.4.21.
+3. `gradle --version` reports Kotlin 2.3.21. That is Gradle's embedded
+   Kotlin for build scripts and is unrelated to the application compiler.
+4. The compose plugin logs "Detected Android Gradle Plugin compose
+   compiler configuration", which is expected with AGP 9 built-in
+   Kotlin.
+5. CI job logs are not readable without GitHub authentication; the
+   workflow therefore publishes filtered evidence to the `ci-results`
+   branch and full logs plus the APK as workflow artifacts.
+
+Consequences:
+- The build toolchain is verified, with the caveat that launch behavior
+  has not been tested. M0b's "basic application launches" criterion
+  remains open.
+- Any future claim of a passing build must cite a workflow run and its
+  published results.

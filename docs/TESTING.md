@@ -5,33 +5,45 @@ unavailable test is reported as such, never implied to have passed.
 
 ## 1. Build Verification
 
-Commands (run from the project root):
+Builds run on GitHub-hosted `ubuntu-24.04` x86_64 runners through
+`.github/workflows/verify-toolchain.yml` (decision D012). There is no
+local JDK, Android SDK or Gradle in the Termux environment, so a build
+claim can only come from a workflow run.
 
-    ./gradlew --version                     # wrapper + JVM actually used
-    ./gradlew buildEnvironment              # resolved plugins, KGP version
-    ./gradlew :app:assembleDebug            # compilation + APK
-    ./gradlew :app:lintDebug                # Android lint
-    ./gradlew :app:testDebugUnitTest        # JVM unit tests
+The workflow runs, in order:
+
+    gradle --version                        # Gradle and launcher JVM
+    gradle buildEnvironment                 # resolved plugins, KGP version
+    gradle :app:dependencies --configuration debugCompileClasspath
+    gradle :app:compileDebugKotlin --info   # Compose compiler
+    gradle :app:assembleDebug               # APK
+    gradle :app:testDebugUnitTest           # JVM unit tests
 
 Requirements for a build to count as verified:
-- The Gradle wrapper is used, not a system Gradle.
-- The output is observed, not assumed.
+- The output is observed in a completed workflow run, not assumed.
 - AGP, Gradle, JDK and Kotlin versions in the output match
-  docs/DECISIONS.md D005 and D007.
-- No prerelease dependency appears in the resolved graph
-  (`./gradlew :app:dependencies`).
+  docs/DECISIONS.md D005 and D013.
+- No prerelease dependency appears in the resolved graph.
+- A command that reports `NO-SOURCE` or `UP-TO-DATE` is not counted as
+  a passing test.
 
-Current status:
-- Not run. No JDK, Android SDK or Gradle is installed in the Termux
-  development environment, and Google does not publish build-tools for
-  Linux aarch64.
-- The verification environment is an open decision in
-  docs/DECISIONS.md D012. Until it is resolved, no build claim may be
-  made.
+Results are published to the `ci-results` branch (`status.txt`,
+`versions.log`, filtered dependency and build-environment logs, APK
+size and sha256), and full logs plus the debug APK are uploaded as
+workflow artifacts. Job console logs require GitHub authentication and
+are not used as the sole evidence.
+
+Current status (2026-11-25):
+- `assembleDebug` succeeds on `ubuntu-24.04` with AGP 9.5.2, Gradle
+  9.6.0, Temurin JDK 17.0.21 and Kotlin 2.4.21 (runs 45621464769 and
+  45621953748). Debug APK produced and hashed.
+- `testDebugUnitTest` reports `NO-SOURCE`; there are no tests yet.
+- Application launch is not covered by CI and remains unverified.
 
 ## 2. Configuration Verification
 
-- `compileSdk 37`, `targetSdk 36`, `minSdk 26` in the app module.
+- `compileSdk 37.1` (API 37 with `minorApiLevel = 1`), `targetSdk 36`,
+  `minSdk 26` in the app module.
 - JDK 17 toolchain, `jvmTarget = 17`.
 - Manifest contains exactly the permissions listed in
   docs/ARCHITECTURE.md section 8 and no others.

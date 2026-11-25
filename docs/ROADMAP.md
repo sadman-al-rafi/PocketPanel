@@ -26,7 +26,8 @@ Status: [x] Completed 2026-11-25 (research only; no project generated)
 - [x] Compatibility matrix documented (docs/DECISIONS.md D005).
 - [x] Selected toolchain verified against official sources.
 - [x] SDK level policy decided (D006: compileSdk 37, targetSdk 36,
-      minSdk 26).
+      minSdk 26; compileSdk later corrected to 37.1 in D006/D013 after
+      CI exposed the Compose 1.13.0 AAR metadata requirement).
 - [x] Overlay, foreground service and monitoring APIs verified
       (D008, D009).
 - [x] Architecture documented (docs/ARCHITECTURE.md).
@@ -59,31 +60,67 @@ Status: [x] Completed 2026-11-25 (research only; no project generated)
   plugin to it.
 - Finalize the application ID and package structure.
 
+Resolution: the build environment is D012 (GitHub Actions
+`ubuntu-24.04`) and the effective Kotlin/Compose versions are recorded
+in D013. The application ID is `dev.pocketpanel`, already used by the
+M0b scaffold. The "no build run" and "Termux aarch64 unproven" notes
+above describe the state at the end of M0a and remain factually true for
+that milestone; the build itself was verified in M0b.
+
 ---
 
 ## M0b — Project Generation and Build Verification
-Status: [!] Blocked — awaiting authorization and a build environment
-decision (D012)
+Status: [~] Build verified 2026-11-25; launch smoke test pending
 
 ### Objectives
 - Create the native Android project with the pinned toolchain.
 - Record the effective Kotlin/KGP version from the build.
-- Generate and verify the Gradle wrapper at 9.6.0.
+- Generate and verify the Gradle wrapper at 9.6.0. (Not done; see
+  Remaining below.)
 - Establish the initial project architecture from
   docs/ARCHITECTURE.md.
 - Produce a verified debug build.
 
 ### Acceptance Criteria
-- [ ] Android project generated with AGP 9.5.2, Gradle 9.6.0,
-      JDK 17.
-- [ ] Version catalog contains only the versions recorded in D005.
-- [ ] `./gradlew buildEnvironment` output recorded, confirming the
-      Kotlin version and Compose compiler plugin alignment.
-- [ ] Project builds successfully (real, observed build output).
-- [ ] Basic application launches.
-- [ ] No prerelease dependency is resolved.
-- [ ] Verification method recorded in docs/TESTING.md and
-      docs/DECISIONS.md.
+- [x] Project scaffolding generated with AGP 9.5.2, Gradle 9.6.0,
+      JDK 17. (Temporary verification scaffold only; no features. The
+      wrapper is not committed yet; see Remaining below.)
+- [x] Version catalog contains only the versions recorded in D005,
+      with `compileSdk` corrected to 37.1 per D006 and D013.
+- [x] Build classpath recorded, confirming Kotlin 2.4.21 and the
+      Compose compiler plugin 2.4.21 (CI run 45621953748).
+- [x] Project builds successfully with real, observed output
+      (`assembleDebug` success; APK 12,884,656 bytes, sha256
+      `da26cee2…`).
+- [ ] Basic application launches. Not tested: CI runs no emulator or
+      device.
+- [x] No prerelease dependency resolved.
+- [x] Verification method recorded in docs/TESTING.md and
+      docs/DECISIONS.md (D012, D013).
+
+### Verification Performed
+- Run 45620269443: failed at the SDK-install step (`sdkmanager` not on
+  the runner PATH). The runner image already contains the required SDK,
+  so the step was removed.
+- Run 45620584351: Kotlin/Compose compilation succeeded; packaging
+  failed the AAR metadata check because Compose 1.13.0 requires
+  `compileSdk` 37.1 or later.
+- Run 45621464769: full success after switching to API 37.1; APK
+  produced.
+- Run 45621953748: full success with root buildscript evidence,
+  confirming AGP 9.5.2, KGP 2.4.21 and Compose plugin 2.4.21.
+- `testDebugUnitTest` reported `NO-SOURCE`; no tests exist yet, so no
+  test-pass claim is made.
+
+### Remaining Before This Milestone Closes
+- Launch smoke test on an emulator or physical device.
+- Commit the Gradle wrapper (`gradlew`, `gradlew.bat`,
+  `gradle/wrapper/`). It could not be generated locally without a JDK
+  and Gradle, so M0b pinned Gradle 9.6.0 through
+  `gradle/actions/setup-gradle@v6` instead. D011 requires the wrapper,
+  so this is a documented deviation, not a silently met criterion.
+- Replace the temporary verification scaffold with the real project
+  structure when M1 is authorized.
 
 ---
 
@@ -293,10 +330,12 @@ Status: [ ] Not started
 ---
 
 ## Current Milestone
-M0b — Project Generation and Build Verification
+M1 — Application Foundation and Material You
 
-Status: blocked pending explicit authorization and a build environment
-decision (docs/DECISIONS.md D012).
+Status: not started; awaiting explicit authorization.
 
-M0a (research and foundation documentation) is complete and recorded
-above. Do not start M1 or later without explicit authorization.
+M0a (research and documentation) is complete. M0b build verification is
+complete on the GitHub Actions x86_64 runner; its launch smoke test is
+still open and is carried into M1 startup.
+
+Do not start M1 or later without explicit authorization.
