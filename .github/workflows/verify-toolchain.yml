@@ -148,7 +148,7 @@ jobs:
             > ci-results/tests-tail.log 2>/dev/null
           cp -r app/build/reports/tests/testDebugUnitTest \
             ci-results/unit-test-reports 2>/dev/null
-          cp -r app/build/reports/lint-results-debug.html \
+          cp app/build/reports/lint-results-debug.html \
             ci-results/lint-report.html 2>/dev/null
           sha256sum app/build/outputs/apk/debug/*.apk \
             > ci-results/apk-sha256.txt 2>/dev/null
@@ -187,7 +187,7 @@ jobs:
   emulator:
     name: Emulator launch and UI tests
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
+    timeout-minutes: 40
     needs: build
 
     steps:
@@ -203,72 +203,152 @@ jobs:
       - name: Set up Gradle from the committed wrapper
         uses: gradle/actions/setup-gradle@v6.4.1
 
-      - name: Enable KVM access for the emulator
+      - name: Record the emulator environment
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/emulator"
+          {
+            echo "date_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "ANDROID_HOME=${ANDROID_HOME:-unset}"
+            echo
+            echo "KVM device:"
+            ls -l /dev/kvm 2>&1 || true
+            echo "CPU virtualization flags: $(grep -cE 'vmx|svm' /proc/cpuinfo || true)"
+            echo
+            echo "Preinstalled SDK components:"
+            ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools" 2>/dev/null || true
+            echo
+            echo "Emulator binary:"
+            ls -l "$ANDROID_HOME/emulator/emulator" 2>&1 || true
+            echo
+            echo "cmdline-tools:"
+            find "$ANDROID_HOME/cmdline-tools" -maxdepth 2 -name sdkmanager 2>/dev/null || true
+          } | tee "$RUNNER_TEMP/emulator/environment.txt"
+
+      - name: Enable KVM access
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
             | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+          test -e /dev/kvm
 
-      - name: Run instrumented tests and verify a cold launch
-        uses: ReactiveCircus/android-emulator-runner@v2.38.0
-        with:
-          api-level: 36
-          target: google_apis
-          arch: x86_64
-          profile: pixel_6
-          disable-animations: true
-          emulator-options: >-
-            -no-window -gpu swiftshader_indirect -no-snapshot -noaudio
-            -no-boot-anim -camera-back none
-          script: |
-            set -eu
-            mkdir -p "$RUNNER_TEMP/emulator"
-            ./gradlew :app:connectedDebugAndroidTest --stacktrace 2>&1 \
-              | tee "$RUNNER_TEMP/emulator/connectedDebugAndroidTest.log"
+      - name: Install emulator and API 36 system image
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(command -v sdkmanager || find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -1)"
+          echo "sdkmanager: $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" --install \
+            "emulator" \
+            "platform-tools" \
+            "system-images;android-36;google_apis;x86_64" 2>&1 \
+            | tee "$RUNNER_TEMP/emulator/install.log"
 
-            adb shell am start -W -n dev.pocketpanel/.MainActivity \
-              | tee "$RUNNER_TEMP/emulator/launch.log"
-            grep -q "Status: ok" "$RUNNER_TEMP/emulator/launch.log"
+      - name: Create the AVD
+        run: |
+          set -euo pipefail
+          AVDMANAGER="$(command -v avdmanager || find "$ANDROID_HOME/cmdline-tools" -name avdmanager -type f | head -1)"
+          echo no | "$AVDMANAGER" create avd --force \
+            --name pocketpanel \
+            --package "system-images;android-36;google_apis;x86_64" \
+            --device "pixel_6" 2>&1 | tee "$RUNNER_TEMP/emulator/avd.log"
+          ls -la "$HOME/.android/avd" | tee -a "$RUNNER_TEMP/emulator/avd.log"
 
-            sleep 2
-            adb shell pidof dev.pocketpanel \
-              | tee "$RUNNER_TEMP/emulator/pid.txt"
-            test -s "$RUNNER_TEMP/emulator/pid.txt"
+      - name: Start the emulator
+        run: |
+          set -euo pipefail
+          nohup "$ANDROID_HOME/emulator/emulator" \
+            -avd pocketpanel \
+            -no-window -gpu swiftshader_indirect -no-snapshot \
+            -noaudio -no-boot-anim -no-metrics \
+            -camera-back none -camera-front none \
+            > "$RUNNER_TEMP/emulator/emulator.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/emulator/emulator.pid"
+          "$ANDROID_HOME/platform-tools/adb" start-server
 
-            if adb logcat -b crash -d | grep -q "FATAL EXCEPTION"; then
-              adb logcat -b crash -d | tee "$RUNNER_TEMP/emulator/crash.log"
-              exit 1
+      - name: Wait for Android to finish booting
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          timeout 120 "$ANDROID_HOME/platform-tools/adb" wait-for-device || true
+          for attempt in $(seq 1 180); do
+            boot_completed="$("$ANDROID_HOME/platform-tools/adb" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+            echo "attempt=$attempt boot_completed=${boot_completed:-empty}" \
+              | tee -a "$RUNNER_TEMP/emulator/boot.log"
+            if [ "$boot_completed" = "1" ]; then
+              exit 0
             fi
+            sleep 5
+          done
+          echo "Emulator did not finish booting within 15 minutes" \
+            | tee -a "$RUNNER_TEMP/emulator/boot.log"
+          exit 1
 
-      - name: Diagnose emulator environment on failure
+      - name: Prepare the device
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/platform-tools/adb" shell settings put global window_animation_scale 0
+          "$ANDROID_HOME/platform-tools/adb" shell settings put global transition_animation_scale 0
+          "$ANDROID_HOME/platform-tools/adb" shell settings put global animator_duration_scale 0
+          "$ANDROID_HOME/platform-tools/adb" shell wm dismiss-keyguard || true
+          "$ANDROID_HOME/platform-tools/adb" devices -l | tee "$RUNNER_TEMP/emulator/devices.txt"
+
+      - name: Run instrumented tests
+        run: |
+          set -o pipefail
+          ./gradlew :app:connectedDebugAndroidTest --stacktrace 2>&1 \
+            | tee "$RUNNER_TEMP/emulator/connectedDebugAndroidTest.log"
+
+      - name: Verify a cold launch
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/platform-tools/adb" shell am force-stop dev.pocketpanel
+          "$ANDROID_HOME/platform-tools/adb" shell am start -W -n dev.pocketpanel/.MainActivity \
+            | tee "$RUNNER_TEMP/emulator/launch.log"
+          grep -q "Status: ok" "$RUNNER_TEMP/emulator/launch.log"
+
+          sleep 2
+          "$ANDROID_HOME/platform-tools/adb" shell pidof dev.pocketpanel \
+            | tee "$RUNNER_TEMP/emulator/pid.txt"
+          test -s "$RUNNER_TEMP/emulator/pid.txt"
+
+          "$ANDROID_HOME/platform-tools/adb" logcat -b crash -d > "$RUNNER_TEMP/emulator/crash-buffer.txt" 2>&1 || true
+          if grep -q "FATAL EXCEPTION" "$RUNNER_TEMP/emulator/crash-buffer.txt"; then
+            echo "Crash found in the crash buffer"
+            exit 1
+          fi
+          "$ANDROID_HOME/platform-tools/adb" logcat -d > "$RUNNER_TEMP/emulator/logcat.txt" 2>&1 || true
+
+      - name: Capture failure diagnostics
         if: failure()
         run: |
           set +e
-          mkdir -p "$RUNNER_TEMP/emulator"
           {
-            echo "KVM:"
-            ls -l /dev/kvm
+            echo "== emulator.log (tail) =="
+            tail -150 "$RUNNER_TEMP/emulator/emulator.log" 2>/dev/null
             echo
-            echo "Running as:"
-            id
+            echo "== boot log =="
+            cat "$RUNNER_TEMP/emulator/boot.log" 2>/dev/null
             echo
-            echo "ANDROID_HOME=$ANDROID_HOME"
-            ls "$ANDROID_HOME/cmdline-tools" 2>/dev/null
-            "$ANDROID_HOME/emulator/emulator" -version 2>&1 | head -5
+            echo "== devices =="
+            "$ANDROID_HOME/platform-tools/adb" devices -l 2>&1
             echo
-            echo "AVDs:"
-            ls -la "$HOME/.android/avd" 2>/dev/null
+            echo "== AVD directory =="
+            ls -la "$HOME/.android/avd" 2>&1
             echo
-            echo "Devices:"
-            adb devices -l
-            echo
-            echo "Crash buffer:"
-            adb logcat -b crash -d | tail -50
-            echo
-            echo "Temporary logs:"
-            find "$RUNNER_TEMP" -maxdepth 2 -name "*.log" 2>/dev/null | head -10
+            echo "== crash buffer =="
+            "$ANDROID_HOME/platform-tools/adb" logcat -b crash -d 2>&1 | tail -50
           } > "$RUNNER_TEMP/emulator/diagnostics.txt" 2>&1
+
+      - name: Stop the emulator
+        if: always()
+        run: |
+          set +e
+          "$ANDROID_HOME/platform-tools/adb" emu kill 2>/dev/null
+          if [ -f "$RUNNER_TEMP/emulator/emulator.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/emulator/emulator.pid")" 2>/dev/null
+          fi
 
       - name: Collect emulator results
         if: always()
@@ -283,11 +363,11 @@ jobs:
             echo "device: pixel_6 x86_64 google_apis"
             echo "finished_utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           } > "$RUNNER_TEMP/emulator/status.txt"
-          adb logcat -d > "$RUNNER_TEMP/emulator/logcat.txt" 2>/dev/null
           cp -r app/build/reports/androidTests \
             "$RUNNER_TEMP/emulator/androidTests" 2>/dev/null
-          echo "emulator evidence:"
-          ls -lR "$RUNNER_TEMP/emulator" | head -40
+          cp -r app/build/outputs/androidTest-results \
+            "$RUNNER_TEMP/emulator/androidTest-results" 2>/dev/null
+          ls -lR "$RUNNER_TEMP/emulator" | head -60
 
       - name: Publish emulator results to the ci-results branch
         if: always()

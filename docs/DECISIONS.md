@@ -519,38 +519,66 @@ Consequences:
 Date: 2026-11-25
 
 Decision: Instrumented tests and a cold-launch check run on an Android
-36 (API 36, `google_apis`, x86_64) emulator created by
-`ReactiveCircus/android-emulator-runner@v2.38.0` on `ubuntu-24.04`, with
-KVM enabled by the documented udev rule.
+36 (API 36, `google_apis`, x86_64) emulator on `ubuntu-24.04`, with KVM
+enabled by the documented udev rule. The emulator, system image and AVD
+are created by explicit workflow steps rather than a third-party action,
+so every stage has a bounded timeout and its own captured log.
 
-Scope of the job:
-- `./gradlew :app:connectedDebugAndroidTest` (UI smoke and persistence
-  tests).
-- `adb shell am start -W -n dev.pocketpanel/.MainActivity`, requiring
-  `Status: ok`.
-- The app process must exist after launch.
-- The crash buffer must not contain `FATAL EXCEPTION`.
+Observed during setup:
+- `ReactiveCircus/android-emulator-runner@v2.9.0` fails immediately; it
+  uses the retired Node 12 runtime.
+- v2.38.0 (Node 24) ran without producing any log or result for over 50
+  minutes on the first attempt. Because the action hides its stages and
+  the job log is not accessible without authentication, it was replaced
+  with the explicit steps below.
+
+Workflow stages (all logged under `ci-results/emulator/`):
+1. Record `ANDROID_HOME`, `/dev/kvm`, CPU virtualization flags and the
+   preinstalled SDK.
+2. Enable KVM with a udev rule.
+3. `sdkmanager` install of `emulator`, `platform-tools` and
+   `system-images;android-36;google_apis;x86_64`.
+4. `avdmanager create avd` with the `pixel_6` profile.
+5. Start the emulator headless (`-no-window -gpu swiftshader_indirect
+   -no-snapshot -noaudio -no-boot-anim -no-metrics`).
+6. Poll `sys.boot_completed` for at most 15 minutes.
+7. Disable animations, dismiss the keyguard, run
+   `./gradlew :app:connectedDebugAndroidTest`.
+8. Force-stop and cold-start `dev.pocketpanel/.MainActivity`, require
+   `Status: ok`, require a live PID, and require an empty crash buffer.
+9. On failure, capture the emulator log tail, boot log, device list, AVD
+   directory and crash buffer; always stop the emulator and publish.
 
 Alternatives considered:
+- The third-party emulator action: kept as the first choice but
+  rejected after the two failures above; it also adds an external
+  dependency the workflow can avoid.
 - Physical device: unavailable to automation.
-- Managed device / Gradle Managed Devices: viable, but requires SDK
-  system-image provisioning and AGP device orchestration; the emulator
-  action is smaller for one API level.
-- Multiple API levels: deferred to M11's matrix; one API level keeps the
-  job and runtime minimal, as requested.
+- Gradle Managed Devices: viable, but adds AGP device orchestration and
+  its own provisioning path; explicit steps expose failures more
+  directly.
+- Multiple API levels: deferred to the M11 matrix; one API level keeps
+  the job and runtime minimal, as requested.
 
 Reason: A real install-and-launch check is the only way to verify the
 M1 launch and persistence claims. API 36 matches `targetSdk`.
 
 Verification sources:
-- https://github.com/ReactiveCircus/android-emulator-runner/releases (v2.38.0, node24 runtime)
 - https://dl.google.com/android/repository/sys-img/google_apis/sys-img2-3.xml
   (confirms `system-images;android-36;google_apis;x86_64`)
-- https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
+- https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+  (Linux x64 runners provide hardware acceleration; `ANDROID_HOME`
+  preinstalled)
+- https://developer.android.com/studio/run/emulator-commandline
+- https://github.com/ReactiveCircus/android-emulator-runner/blob/v2.38.0/action.yml
+  (node24 runtime; inspected during diagnosis)
 
 Consequences:
-- Every push that changes app or build files now runs a second,
-  slower job; it starts only after the build job succeeds.
+- Every push that changes app or build files runs a second, slower job;
+  it starts only after the build job succeeds.
+- The first run downloads the emulator and system image (~2 GB) and is
+  therefore the slowest.
 - Emulator evidence is published under `ci-results/emulator/` (status,
-  launch log, test report, logcat) and uploaded as an artifact.
+  environment, install/AVD/boot/launch logs, test report, logcat,
+  diagnostics) and uploaded as an artifact.
 - API 26/29/34/35 behavior remains unverified until the M11 matrix.
