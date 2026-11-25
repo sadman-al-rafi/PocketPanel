@@ -520,7 +520,7 @@ Date: 2026-11-25
 
 Decision: Instrumented tests and a cold-launch check run on an Android
 36 (API 36, `google_apis`, x86_64) emulator created by
-`ReactiveCircus/android-emulator-runner@v2.9.0` on `ubuntu-24.04`, with
+`ReactiveCircus/android-emulator-runner@v2.38.0` on `ubuntu-24.04`, with
 KVM enabled by the documented udev rule.
 
 Scope of the job:
@@ -543,7 +543,7 @@ Reason: A real install-and-launch check is the only way to verify the
 M1 launch and persistence claims. API 36 matches `targetSdk`.
 
 Verification sources:
-- https://github.com/ReactiveCircus/android-emulator-runner/releases (v2.9.0)
+- https://github.com/ReactiveCircus/android-emulator-runner/releases (v2.38.0, node24 runtime)
 - https://dl.google.com/android/repository/sys-img/google_apis/sys-img2-3.xml
   (confirms `system-images;android-36;google_apis;x86_64`)
 - https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners

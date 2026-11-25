@@ -211,7 +211,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Run instrumented tests and verify a cold launch
-        uses: ReactiveCircus/android-emulator-runner@v2.9.0
+        uses: ReactiveCircus/android-emulator-runner@v2.38.0
         with:
           api-level: 36
           target: google_apis
@@ -219,8 +219,8 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: >-
-            -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-            -camera-back none
+            -no-window -gpu swiftshader_indirect -no-snapshot -noaudio
+            -no-boot-anim -camera-back none
           script: |
             set -eu
             mkdir -p "$RUNNER_TEMP/emulator"
@@ -240,6 +240,35 @@ jobs:
               adb logcat -b crash -d | tee "$RUNNER_TEMP/emulator/crash.log"
               exit 1
             fi
+
+      - name: Diagnose emulator environment on failure
+        if: failure()
+        run: |
+          set +e
+          mkdir -p "$RUNNER_TEMP/emulator"
+          {
+            echo "KVM:"
+            ls -l /dev/kvm
+            echo
+            echo "Running as:"
+            id
+            echo
+            echo "ANDROID_HOME=$ANDROID_HOME"
+            ls "$ANDROID_HOME/cmdline-tools" 2>/dev/null
+            "$ANDROID_HOME/emulator/emulator" -version 2>&1 | head -5
+            echo
+            echo "AVDs:"
+            ls -la "$HOME/.android/avd" 2>/dev/null
+            echo
+            echo "Devices:"
+            adb devices -l
+            echo
+            echo "Crash buffer:"
+            adb logcat -b crash -d | tail -50
+            echo
+            echo "Temporary logs:"
+            find "$RUNNER_TEMP" -maxdepth 2 -name "*.log" 2>/dev/null | head -10
+          } > "$RUNNER_TEMP/emulator/diagnostics.txt" 2>&1
 
       - name: Collect emulator results
         if: always()
