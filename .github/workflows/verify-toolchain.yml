@@ -13,6 +13,7 @@ on:
       - "gradle.properties"
       - ".github/workflows/verify-toolchain.yml"
 
+# Emulator evidence is published under ci-results/emulator (D015).
 permissions:
   contents: write
 
