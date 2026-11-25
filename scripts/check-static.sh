@@ -53,6 +53,9 @@ required_files=(
     "app/src/main/res/values/strings.xml"
     "app/src/main/res/values/themes.xml"
     "app/src/main/res/values-night/themes.xml"
+    "app/src/main/res/drawable/ic_launcher_foreground.xml"
+    "app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+    "scripts/check-static.sh"
     ".github/workflows/verify-toolchain.yml"
 )
 
