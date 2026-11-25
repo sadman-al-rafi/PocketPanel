@@ -1,17 +1,27 @@
-# Gradle
+# Android / Gradle
 .gradle/
 build/
 **/build/
-.kotlin/
-
-# Local configuration
 local.properties
 
 # IDE
 .idea/
 *.iml
-*.hprof
 
-# OS
+# Android packages
+*.apk
+*.aab
+
+# Signing credentials
+*.jks
+*.keystore
+keystore.properties
+
+# Environment secrets
+.env
+.env.*
+secrets.properties
+
+# OS files
 .DS_Store
 Thumbs.db
