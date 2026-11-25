@@ -3,21 +3,294 @@
 Architecture decisions must be based on verified Android platform
 capabilities and compatible stable technologies.
 
-This document must be populated during M0 before implementation.
+This document was populated during M0 (research phase) on 2026-11-25.
+It describes the proposed architecture for implementation in M0b/M1.
+Nothing described here has been built or run yet.
 
-It should document:
+Toolchain versions and verification sources are recorded in
+docs/DECISIONS.md. Platform constraints are recorded in sections below.
 
-- Application structure.
-- UI architecture.
-- State management.
-- Overlay implementation.
-- Monitoring providers.
-- Permissions.
-- Service lifecycle.
-- Data persistence.
-- Optional Shizuku integration boundaries.
-- Optional root integration boundaries.
-- Testing strategy.
+## 1. Architectural Principles
 
-Do not invent architectural decisions without validating
-their technical feasibility.
+- Single application module until there is a demonstrated need to split.
+- Compose for all application UI, including the overlay panel surface.
+- Monitoring is provider-based: every metric is a swappable provider
+  that declares its own availability.
+- Unavailable data is represented as unavailable, never as zero, a
+  placeholder value or an estimate.
+- Standard Android access is the baseline. Shizuku and root are optional
+  upgrades behind the same provider interfaces.
+- Failures are handled explicitly and surfaced in the UI state.
+- No background polling that is not justified by a visible feature.
+
+## 2. Proposed Source Layout
+
+    app/
+      src/main/
+        AndroidManifest.xml
+        java/<applicationId>/
+          PocketPanelApplication.kt
+          MainActivity.kt
+          ui/
+            theme/            Theme.kt, Color.kt, Type.kt
+            main/             MainScreen.kt, MainViewModel.kt
+            settings/         SettingsScreen.kt, SettingsViewModel.kt
+            components/       Shared metric cards and controls
+          overlay/
+            OverlayService.kt          Foreground service + window host
+            OverlayWindowController.kt Manages WindowManager views
+            OverlayContainerView.kt    ComposeView + lifecycle owners
+            OverlayEdge.kt             Edge attachment logic
+            OverlayInteraction.kt      Drag/tap gesture handling
+          monitoring/
+            MetricProvider.kt          Provider contract
+            MetricSample.kt            Value + timestamp + availability
+            MonitoringCoordinator.kt   Scheduling and fan-out
+            providers/
+              CpuUsageProvider.kt
+              MemoryProvider.kt
+              BatteryProvider.kt
+              ThermalProvider.kt
+              NetworkProvider.kt
+              GpuProvider.kt
+          permissions/
+            OverlayPermission.kt
+            NotificationPermission.kt
+          service/
+            ServiceController.kt
+            NotificationFactory.kt
+          settings/
+            SettingsRepository.kt
+            UserPreferences.kt
+        res/                         Themes, strings, icons, drawables
+      src/test/                      Local JVM unit tests
+      src/androidTest/               Instrumented tests
+
+The application ID is finalized in M0b and is not yet decided.
+
+## 3. UI Architecture
+
+- Single `MainActivity`, Compose-only content. No Navigation component
+  is required for two screens; a small sealed UI state in `MainViewModel`
+  selects main vs. settings. Introduce Navigation only if the screen
+  count grows.
+- Material 3 theming centralized in `ui/theme`. Composables consume
+  `MaterialTheme.colorScheme` and `MaterialTheme.typography` tokens only.
+  No hardcoded colors in screens.
+- Theme mode (System / Light / Dark) and dynamic color flag live in user
+  settings and are applied at the top of the composition.
+- Dynamic color uses `dynamicDarkColorScheme`/`dynamicLightColorScheme`
+  when `Build.VERSION.SDK_INT >= 31`; otherwise a defined Material 3
+  fallback palette.
+- Animations limited to panel expansion/collapse and standard Material
+  state transitions.
+
+## 4. State Management
+
+- `ViewModel` + `StateFlow` for screen state; collected with
+  lifecycle-aware collection in Compose.
+- Monitoring data is exposed as a single immutable UI state object:
+
+      data class MonitoringUiState(
+          val cpu: MetricUi,
+          val memory: MetricUi,
+          val battery: MetricUi,
+          val thermal: MetricUi,
+          val network: MetricUi,
+          val gpu: MetricUi,
+      )
+
+  where `MetricUi` carries value, unit, timestamp and availability
+  (Available / Unavailable / PermissionMissing / NotSupported).
+- Provider failures update availability state; they do not throw into
+  the composition.
+- Settings are a cold `Flow` from DataStore, converted to state where the
+  UI needs it. No duplicate in-memory source of truth.
+
+## 5. Overlay Implementation
+
+Verified platform facts:
+
+- Requires `SYSTEM_ALERT_WINDOW`, granted by the user through
+  `Settings.ACTION_MANAGE_OVERLAY_PERMISSION`; checked with
+  `Settings.canDrawOverlays(context)`.
+- The permission can be revoked at any time, including while the service
+  runs. It must be re-checked before creating a window and on resume.
+- `TYPE_APPLICATION_OVERLAY` exists from API 26. At `minSdk 26` this is
+  the only overlay type needed, so no legacy `TYPE_PHONE` path exists.
+- `WindowManager.addView` throws `BadTokenException` /
+  `WindowManager.InvalidDisplayException` when permission is missing or
+  the display changed; both must be caught and mapped to a state.
+
+Proposed design:
+
+- `OverlayService` owns the `WindowManager` and all overlay views.
+- The handle is a small window: `TYPE_APPLICATION_OVERLAY`,
+  `FLAG_NOT_FOCUSABLE`, `PixelFormat.TRANSLUCENT`, edge `Gravity`,
+  `WRAP_CONTENT`, clamped inside display bounds and cutout-safe insets.
+- The panel is rendered with `ComposeView`. An overlay window is not
+  Activity-backed, so the service must attach
+  `ViewTreeLifecycleOwner`, `ViewTreeSavedStateRegistryOwner` and
+  `ViewTreeViewModelStoreOwner` itself using a service-scoped owner
+  that follows the service lifecycle. Without this, Compose in the
+  overlay will not work correctly.
+- Drag updates horizontal/vertical offset within safe bounds; the
+  resting edge and fractional vertical position are persisted.
+- Tapping the handle toggles the panel; the panel collapses on outside
+  touch, back-style dismissal and screen off.
+- The window is removed synchronously in `onDestroy` and on permission
+  loss before the service stops.
+
+## 6. Service Lifecycle
+
+### 6.1 Is a foreground service required?
+
+Verified from Android documentation:
+
+- `SYSTEM_ALERT_WINDOW` is what authorizes `TYPE_APPLICATION_OVERLAY`.
+  No foreground service is an API prerequisite for adding the window.
+- A window belongs to the application's process. If that process is
+  killed, the window disappears. A process hosting a window that is
+  visible to the user is classified at least `IMPORTANCE_VISIBLE` (200),
+  which is protected but ranked below a foreground service (125), and no
+  Android documentation guarantees that an overlay-only process survives
+  memory pressure or background restrictions.
+- A foreground service is the documented mechanism for work the user is
+  aware of, and `startForeground()` keeps the process at
+  foreground-service importance.
+
+Conclusion: a foreground service is not required by the permission model,
+but it is required in practice for a dependable always-available overlay.
+This is recorded as D008.
+
+### 6.2 Which service type?
+
+Android 14+ requires a declared type, and the available types are
+purpose-bound. Checked against the official type list:
+
+- `camera`, `microphone`, `location`, `health`, `mediaPlayback`,
+  `mediaProjection`, `mediaProcessing`, `phoneCall`, `remoteMessaging`,
+  `dataSync`, `connectedDevice`: all describe a specific activity that
+  PocketPanel does not perform.
+- `shortService`: limited to roughly three minutes, cannot be sticky, and
+  cannot start other foreground services. Not suitable for a persistent
+  overlay.
+- `systemExempted`: only for device owners, profile owners, device
+  admins, VPN apps, emergency-role apps and similar. Not eligible.
+- `specialUse`: the documented fallback for valid cases not covered by
+  another type. Google Play describes it as being for "limited
+  scenarios", states that all foreground service types are subject to
+  review, and requires a Play Console declaration with a functionality
+  description, a user-impact statement, a selected use case and a
+  demonstration video.
+
+Therefore `specialUse` is the only eligible type, but it is not
+automatically acceptable for Play distribution. It is a review risk, not
+a settled fact.
+
+Fallback if `specialUse` is not accepted: run the overlay without a
+foreground service, which means the overlay only lives as long as the app
+process does, and the product must present that limitation honestly.
+This fallback is not implemented or promised now.
+
+### 6.3 Proposed behavior
+
+- `OverlayService` is a foreground service with type `specialUse`,
+  declared with `FOREGROUND_SERVICE_SPECIAL_USE`, `FOREGROUND_SERVICE`,
+  the `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` manifest property, and a
+  user-visible notification.
+- `POST_NOTIFICATIONS` is requested on API 33+; denial is tolerated
+  (the notification is invisible but the service still runs).
+- `startForeground` is called immediately in `onStartCommand` to satisfy
+  the five-second requirement.
+- `START_NOT_STICKY` is used: restarting the overlay without a visible
+  window or user intent is not desirable and conflicts with Android 15+
+  foreground-service start rules.
+- Background start: holding `SYSTEM_ALERT_WINDOW` is a documented
+  exemption, but on Android 15+ it additionally requires a currently
+  visible overlay window. Therefore the service is started only from a
+  user gesture (app button or an existing visible overlay), never from
+  a boot receiver.
+- Monitoring polling runs only while the panel is expanded and the
+  screen is on. Collapsing the panel, screen off, or permission loss
+  stops sampling. The service itself continues to exist only while the
+  overlay is enabled by the user.
+
+## 7. Monitoring Providers
+
+Contract (conceptual):
+
+    interface MetricProvider {
+        val id: MetricId
+        fun availability(): Availability
+        suspend fun sample(): MetricSample
+        fun close() {}
+    }
+
+`MonitoringCoordinator` owns a user-configured interval (default
+approximately 2 s for CPU/RAM while the panel is open), runs sampling on
+`Dispatchers.Default`, and drops overlapping samples.
+
+| Provider | Source | Availability model |
+|---|---|---|
+| `CpuUsageProvider` | `/proc/stat` deltas (total and per-cluster where readable) | Best-effort. Not an SDK contract. Unreadable file, parse failure, or non-monotonic counters => Unavailable. Never estimate from a missing baseline. |
+| `MemoryProvider` | `ActivityManager.MemoryInfo` (`totalMem`, `availMem`, `lowMemory`, `threshold`) | Public API, available on all supported devices. |
+| `BatteryProvider` | Sticky `ACTION_BATTERY_CHANGED` plus `BatteryManager.getIntProperty` | Public API. Properties that return `Integer.MIN_VALUE` are reported as Unavailable individually. |
+| `ThermalProvider` | `PowerManager.getCurrentThermalStatus()` (API 29+), `getThermalHeadroom()` (API 30+), thresholds (API 35+), headroom listener (API 36+) | Available only when the running API level provides the call; below that the metric is NotSupported. Thermal status is a coarse enum, not a temperature. |
+| `NetworkProvider` | `TrafficStats` / `ConnectivityManager` | Throughput is device-wide; per-app attribution is not exposed by `TrafficStats`. Connection type is best-effort. |
+| `GpuProvider` | None public. Optional vendor sysfs and EGL renderer string only | Always Unavailable for utilization. Renderer string may be shown as informational data, never as load. |
+
+Explicit non-goals in monitoring: total CPU usage from `ActivityManager`,
+per-process CPU, GPU utilization, and any fabricated "FPS" reading.
+
+## 8. Permissions
+
+| Permission | When | Handling |
+|---|---|---|
+| `SYSTEM_ALERT_WINDOW` | Enabling the overlay | Special app access. Explain before opening settings; re-check on resume and before adding windows. |
+| `FOREGROUND_SERVICE` | Manifest | Required for the overlay service. |
+| `FOREGROUND_SERVICE_SPECIAL_USE` | Manifest | Required from API 34 with the declared service type. |
+| `POST_NOTIFICATIONS` | API 33+, before starting the service | Runtime request; denial does not block the feature, but is shown in settings as a caveat. |
+| `ACCESS_NETWORK_STATE` | Manifest, network provider | Normal permission, no prompt. |
+
+No location, storage, contacts, phone state or accessibility permissions
+are used. No `QUERY_ALL_PACKAGES`.
+
+## 9. Data Persistence
+
+- DataStore Preferences for: theme mode, dynamic color, monitoring
+  interval, overlay enabled, handle edge, handle position, visible
+  metric cards, quick tool preferences.
+- No database is required at this stage. Quick notes are stored as
+  DataStore string values until a demonstrated size need justifies
+  Room.
+- Persistence keys are centralized in `UserPreferences`; no screen reads
+  raw preference keys.
+
+## 10. Optional Elevated Access Boundaries
+
+- Shizuku and root are adapters behind the existing `MetricProvider`
+  interface, not alternate code paths in the UI.
+- Capability detection is runtime-only: Shizuku binder alive and
+  permission granted; root binary present and a test call succeeding.
+- Absence, revocation, or a failed elevated call degrades the affected
+  metric to Unavailable and never disables standard mode.
+- Elevated providers live in their own package so they can be audited
+  and, if needed, excluded at build time.
+- Verified constraint: the Shizuku shell UID has limited permissions; it
+  is not equivalent to root. Shizuku also requires the separate Shizuku
+  application and a user-initiated start (root or Android 11+ wireless
+  debugging).
+
+## 11. Testing Strategy
+
+See docs/TESTING.md. Build verification cannot currently run in the
+development environment; this is recorded as an open blocker in
+docs/ROADMAP.md M0b.
+
+## 12. Explicitly Deferred
+
+- Multiple modules, dependency injection framework, navigation library.
+- Room, WorkManager, and any scheduled background work.
+- Compose Multiplatform or any non-Android target.
+- Cloud sync, accounts, telemetry.
