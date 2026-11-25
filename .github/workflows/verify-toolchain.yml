@@ -65,7 +65,7 @@ jobs:
       - name: Resolve build environment
         run: |
           set -o pipefail
-          gradle :app:buildEnvironment --stacktrace 2>&1 \
+          gradle buildEnvironment --stacktrace 2>&1 \
             | tee "$RUNNER_TEMP/logs/buildEnvironment.log"
 
       - name: Resolve Kotlin and Compose dependencies
