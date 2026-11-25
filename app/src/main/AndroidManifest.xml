@@ -2,14 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!--
-        Temporary M0b verification manifest.
-        No overlay, service or monitoring permissions are declared yet.
+        M1 declares no permissions. Overlay, notification and network
+        permissions are added by the milestones that use them.
     -->
     <application
+        android:name=".PocketPanelApplication"
         android:allowBackup="false"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@style/Theme.PocketPanel">
 
         <activity
             android:name=".MainActivity"

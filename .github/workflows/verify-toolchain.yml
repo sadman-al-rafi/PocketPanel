@@ -1,4 +1,4 @@
-name: Verify toolchain
+name: Verify build and app
 
 on:
   workflow_dispatch:
@@ -17,12 +17,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: verify-toolchain-${{ github.ref }}
+  group: verify-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  verify:
-    name: Resolve and build with the pinned toolchain
+  build:
+    name: Build, lint and unit tests
     runs-on: ubuntu-24.04
     timeout-minutes: 40
 
@@ -36,87 +36,85 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Gradle 9.6.0
-        uses: gradle/actions/setup-gradle@v6
-        with:
-          gradle-version: "9.6.0"
-          cache-read-only: false
+      - name: Set up Gradle from the committed wrapper
+        uses: gradle/actions/setup-gradle@v6.4.1
 
       - name: Prepare log directory
         run: mkdir -p "$RUNNER_TEMP/logs"
 
-      - name: Record tool versions and preinstalled SDK
+      - name: Record wrapper, tool versions and preinstalled SDK
         run: |
           set -o pipefail
           {
-            java -version
-            echo
-            gradle --version
+            ./gradlew --version
             echo
             echo "ANDROID_HOME=${ANDROID_HOME:-unset}"
             echo "Installed platforms:"
             ls "$ANDROID_HOME/platforms" 2>/dev/null || true
             echo "Installed build-tools:"
             ls "$ANDROID_HOME/build-tools" 2>/dev/null || true
-            echo "Installed platform-tools:"
-            ls "$ANDROID_HOME/platform-tools" 2>/dev/null | head -5 || true
           } 2>&1 | tee "$RUNNER_TEMP/logs/versions.log"
 
       - name: Resolve build environment
         run: |
           set -o pipefail
-          gradle buildEnvironment --stacktrace 2>&1 \
+          ./gradlew buildEnvironment --stacktrace 2>&1 \
             | tee "$RUNNER_TEMP/logs/buildEnvironment.log"
 
       - name: Resolve Kotlin and Compose dependencies
         run: |
           set -o pipefail
-          gradle :app:dependencies --configuration debugCompileClasspath 2>&1 \
+          ./gradlew :app:dependencies --configuration debugCompileClasspath 2>&1 \
             | tee "$RUNNER_TEMP/logs/dependencies-debugCompileClasspath.log"
-
-      - name: Compile Kotlin with the Compose compiler
-        run: |
-          set -o pipefail
-          gradle :app:compileDebugKotlin --info --stacktrace 2>&1 \
-            | tee "$RUNNER_TEMP/logs/compileDebugKotlin.log"
 
       - name: Assemble debug APK
         run: |
           set -o pipefail
-          gradle :app:assembleDebug --stacktrace 2>&1 \
+          ./gradlew :app:assembleDebug --stacktrace 2>&1 \
             | tee "$RUNNER_TEMP/logs/assembleDebug.log"
+
+      - name: Run Android lint
+        run: |
+          set -o pipefail
+          ./gradlew :app:lintDebug --stacktrace 2>&1 \
+            | tee "$RUNNER_TEMP/logs/lintDebug.log"
 
       - name: Run unit tests
         run: |
           set -o pipefail
-          gradle :app:testDebugUnitTest --stacktrace 2>&1 \
+          ./gradlew :app:testDebugUnitTest --stacktrace 2>&1 \
             | tee "$RUNNER_TEMP/logs/testDebugUnitTest.log"
 
       - name: Build summary
         if: always()
         run: |
           {
-            echo "# Toolchain verification"
+            echo "## Build result: \`${{ job.status }}\`"
             echo
-            echo "Result: \`${{ job.status }}\`"
-            echo
-            echo "## Resolved Kotlin / Compose entries"
+            echo "### Resolved Kotlin / Compose entries"
             echo '```'
             grep -E "kotlin|compose" \
               "$RUNNER_TEMP/logs/dependencies-debugCompileClasspath.log" 2>/dev/null \
               | sort -u | head -40 || true
             echo '```'
             echo
-            echo "## Buildscript Kotlin / AGP entries"
+            echo "### Buildscript Kotlin / AGP entries"
             echo '```'
             grep -E "kotlin|com\\.android\\.tools\\.build" \
               "$RUNNER_TEMP/logs/buildEnvironment.log" 2>/dev/null \
               | head -40 || true
             echo '```'
             echo
-            echo "## APK output"
+            echo "### Unit tests"
             echo '```'
-            find app/build/outputs/apk -type f 2>/dev/null || true
+            grep -E "tests? (completed|failed)|BUILD (SUCCESSFUL|FAILED)|NO-SOURCE" \
+              "$RUNNER_TEMP/logs/testDebugUnitTest.log" 2>/dev/null | tail -10 || true
+            echo '```'
+            echo
+            echo "### APK"
+            echo '```'
+            ls -l app/build/outputs/apk/debug 2>/dev/null || true
+            sha256sum app/build/outputs/apk/debug/*.apk 2>/dev/null || true
             echo '```'
           } | tee "$RUNNER_TEMP/logs/summary.md"
           cat "$RUNNER_TEMP/logs/summary.md" >> "$GITHUB_STEP_SUMMARY"
@@ -132,31 +130,29 @@ jobs:
             echo "run_number: $GITHUB_RUN_NUMBER"
             echo "job_status: ${{ job.status }}"
             echo "finished_utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo
-            echo "Steps with logs captured:"
-            ls -1 "$RUNNER_TEMP/logs" 2>/dev/null
           } > ci-results/status.txt
 
           cp "$RUNNER_TEMP/logs/versions.log" ci-results/versions.log 2>/dev/null
           cp "$RUNNER_TEMP/logs/summary.md" ci-results/summary.md 2>/dev/null
           cp "$RUNNER_TEMP/logs/buildEnvironment.log" \
             ci-results/buildEnvironment.log 2>/dev/null
-          sha256sum app/build/outputs/apk/debug/*.apk \
-            > ci-results/apk-sha256.txt 2>/dev/null
           grep -E "kotlin|compose" \
             "$RUNNER_TEMP/logs/dependencies-debugCompileClasspath.log" \
             > ci-results/dependencies-filtered.log 2>/dev/null
-          tail -n 300 "$RUNNER_TEMP/logs/compileDebugKotlin.log" \
-            > ci-results/compile-tail.log 2>/dev/null
           tail -n 150 "$RUNNER_TEMP/logs/assembleDebug.log" \
             > ci-results/assemble-tail.log 2>/dev/null
+          tail -n 150 "$RUNNER_TEMP/logs/lintDebug.log" \
+            > ci-results/lint-tail.log 2>/dev/null
           tail -n 100 "$RUNNER_TEMP/logs/testDebugUnitTest.log" \
             > ci-results/tests-tail.log 2>/dev/null
-          find app/build/outputs/apk -type f \
-            > ci-results/apk-files.txt 2>/dev/null
+          cp -r app/build/reports/tests/testDebugUnitTest \
+            ci-results/unit-test-reports 2>/dev/null
+          cp -r app/build/reports/lint-results-debug.html \
+            ci-results/lint-report.html 2>/dev/null
+          sha256sum app/build/outputs/apk/debug/*.apk \
+            > ci-results/apk-sha256.txt 2>/dev/null
           ls -l app/build/outputs/apk/debug \
-            >> ci-results/apk-files.txt 2>/dev/null
-          echo "collected"
+            > ci-results/apk-files.txt 2>/dev/null
 
       - name: Publish results to the ci-results branch
         if: always()
@@ -165,10 +161,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B ci-results
-          git add ci-results
-          git commit -m "Toolchain verification results (run $GITHUB_RUN_ID)"
+          git add -f ci-results
+          git commit -m "Build and unit test results (run $GITHUB_RUN_ID)"
           git push --force origin ci-results
-          echo "publish exit: $?"
 
       - name: Upload debug APK
         if: success()
@@ -178,10 +173,110 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      - name: Upload logs
+      - name: Upload logs and reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: toolchain-logs
-          path: ${{ runner.temp }}/logs
+          name: build-logs
+          path: |
+            ${{ runner.temp }}/logs
+            app/build/reports
+          if-no-files-found: warn
+
+  emulator:
+    name: Emulator launch and UI tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    needs: build
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle from the committed wrapper
+        uses: gradle/actions/setup-gradle@v6.4.1
+
+      - name: Enable KVM access for the emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run instrumented tests and verify a cold launch
+        uses: ReactiveCircus/android-emulator-runner@v2.9.0
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: >-
+            -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+            -camera-back none
+          script: |
+            set -eu
+            mkdir -p "$RUNNER_TEMP/emulator"
+            ./gradlew :app:connectedDebugAndroidTest --stacktrace 2>&1 \
+              | tee "$RUNNER_TEMP/emulator/connectedDebugAndroidTest.log"
+
+            adb shell am start -W -n dev.pocketpanel/.MainActivity \
+              | tee "$RUNNER_TEMP/emulator/launch.log"
+            grep -q "Status: ok" "$RUNNER_TEMP/emulator/launch.log"
+
+            sleep 2
+            adb shell pidof dev.pocketpanel \
+              | tee "$RUNNER_TEMP/emulator/pid.txt"
+            test -s "$RUNNER_TEMP/emulator/pid.txt"
+
+            if adb logcat -b crash -d | grep -q "FATAL EXCEPTION"; then
+              adb logcat -b crash -d | tee "$RUNNER_TEMP/emulator/crash.log"
+              exit 1
+            fi
+
+      - name: Collect emulator results
+        if: always()
+        run: |
+          set +e
+          mkdir -p "$RUNNER_TEMP/emulator"
+          {
+            echo "commit: $GITHUB_SHA"
+            echo "run_id: $GITHUB_RUN_ID"
+            echo "job_status: ${{ job.status }}"
+            echo "api_level: 36"
+            echo "device: pixel_6 x86_64 google_apis"
+            echo "finished_utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > "$RUNNER_TEMP/emulator/status.txt"
+          adb logcat -d > "$RUNNER_TEMP/emulator/logcat.txt" 2>/dev/null
+          cp -r app/build/reports/androidTests \
+            "$RUNNER_TEMP/emulator/androidTests" 2>/dev/null
+          echo "emulator evidence:"
+          ls -lR "$RUNNER_TEMP/emulator" | head -40
+
+      - name: Publish emulator results to the ci-results branch
+        if: always()
+        run: |
+          set +e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin ci-results
+          git checkout -B ci-results origin/ci-results
+          mkdir -p ci-results/emulator
+          cp -r "$RUNNER_TEMP/emulator/." ci-results/emulator/
+          git add -f ci-results
+          git commit -m "Emulator verification results (run $GITHUB_RUN_ID)"
+          git push origin ci-results
+
+      - name: Upload emulator evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: emulator-evidence
+          path: ${{ runner.temp }}/emulator
           if-no-files-found: warn

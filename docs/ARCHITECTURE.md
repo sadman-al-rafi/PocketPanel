@@ -4,8 +4,9 @@ Architecture decisions must be based on verified Android platform
 capabilities and compatible stable technologies.
 
 This document was populated during M0 (research phase) on 2026-11-25.
-It describes the proposed architecture for implementation in M0b/M1.
-Nothing described here has been built or run yet.
+M1 implements the foundation subset described here: Material 3 theme,
+settings persistence and the main/settings screens. Overlay, monitoring
+and tools remain proposed until their milestones.
 
 Toolchain versions and verification sources are recorded in
 docs/DECISIONS.md. Platform constraints are recorded in sections below.
@@ -23,57 +24,48 @@ docs/DECISIONS.md. Platform constraints are recorded in sections below.
 - Failures are handled explicitly and surfaced in the UI state.
 - No background polling that is not justified by a visible feature.
 
-## 2. Proposed Source Layout
+## 2. Source Layout
 
     app/
       src/main/
         AndroidManifest.xml
-        java/<applicationId>/
-          PocketPanelApplication.kt
-          MainActivity.kt
-          ui/
-            theme/            Theme.kt, Color.kt, Type.kt
-            main/             MainScreen.kt, MainViewModel.kt
-            settings/         SettingsScreen.kt, SettingsViewModel.kt
-            components/       Shared metric cards and controls
-          overlay/
-            OverlayService.kt          Foreground service + window host
-            OverlayWindowController.kt Manages WindowManager views
-            OverlayContainerView.kt    ComposeView + lifecycle owners
-            OverlayEdge.kt             Edge attachment logic
-            OverlayInteraction.kt      Drag/tap gesture handling
-          monitoring/
-            MetricProvider.kt          Provider contract
-            MetricSample.kt            Value + timestamp + availability
-            MonitoringCoordinator.kt   Scheduling and fan-out
-            providers/
-              CpuUsageProvider.kt
-              MemoryProvider.kt
-              BatteryProvider.kt
-              ThermalProvider.kt
-              NetworkProvider.kt
-              GpuProvider.kt
-          permissions/
-            OverlayPermission.kt
-            NotificationPermission.kt
-          service/
-            ServiceController.kt
-            NotificationFactory.kt
+        java/dev/pocketpanel/
+          PocketPanelApplication.kt   Owns the settings repository
+          MainActivity.kt             Single Compose host activity
           settings/
-            SettingsRepository.kt
-            UserPreferences.kt
-        res/                         Themes, strings, icons, drawables
-      src/test/                      Local JVM unit tests
+            ThemeMode.kt              SYSTEM / LIGHT / DARK
+            UserPreferences.kt        Immutable settings snapshot
+            SettingsRepository.kt     Repository contract
+            DataStoreSettingsRepository.kt
+          ui/
+            PocketPanelApp.kt         Screen switch + back handling
+            PocketPanelViewModel.kt   Screen state + settings writes
+            Labels.kt                 Mode -> string resource mapping
+            TestTags.kt               Stable tags for UI tests
+            theme/                    Color.kt, Type.kt, Theme.kt
+            main/                     MainScreen.kt
+            settings/                 SettingsScreen.kt
+          overlay/                    M2+
+          monitoring/                 M3+
+          permissions/                M2+
+          service/                    M2+
+        res/                         Themes, strings, vector icons
+      src/test/                      JVM unit tests
       src/androidTest/               Instrumented tests
 
-The application ID is finalized in M0b and is not yet decided.
+The application ID is `dev.pocketpanel`.
+
+Screens are deliberately few: M1 has a single `PocketPanelViewModel`
+that exposes the current screen and the persisted preferences. Separate
+screen view models are introduced only when a screen gains state that is
+not shared.
 
 ## 3. UI Architecture
 
 - Single `MainActivity`, Compose-only content. No Navigation component
-  is required for two screens; a small sealed UI state in `MainViewModel`
-  selects main vs. settings. Introduce Navigation only if the screen
-  count grows.
+  is required for two screens; a sealed `AppScreen` in
+  `PocketPanelViewModel` selects main vs. settings. Introduce Navigation
+  only if the screen count grows.
 - Material 3 theming centralized in `ui/theme`. Composables consume
   `MaterialTheme.colorScheme` and `MaterialTheme.typography` tokens only.
   No hardcoded colors in screens.
@@ -261,11 +253,13 @@ are used. No `QUERY_ALL_PACKAGES`.
 - DataStore Preferences for: theme mode, dynamic color, monitoring
   interval, overlay enabled, handle edge, handle position, visible
   metric cards, quick tool preferences.
+- Implemented in M1: `theme_mode` (enum name) and `dynamic_color`
+  (boolean) in the single `settings` DataStore. Keys are private to
+  `DataStoreSettingsRepository`; no screen reads raw preference keys.
+  Corrupt or unreadable data falls back to defaults.
 - No database is required at this stage. Quick notes are stored as
   DataStore string values until a demonstrated size need justifies
   Room.
-- Persistence keys are centralized in `UserPreferences`; no screen reads
-  raw preference keys.
 
 ## 10. Optional Elevated Access Boundaries
 
@@ -284,9 +278,9 @@ are used. No `QUERY_ALL_PACKAGES`.
 
 ## 11. Testing Strategy
 
-See docs/TESTING.md. Build verification cannot currently run in the
-development environment; this is recorded as an open blocker in
-docs/ROADMAP.md M0b.
+See docs/TESTING.md. Builds, JVM tests, instrumented tests and a cold
+launch run on GitHub Actions (D012, D015); the development environment
+has no JDK or Android SDK.
 
 ## 12. Explicitly Deferred
 

@@ -342,10 +342,11 @@ Reason: Reproducible builds and traceable failures.
 Consequences: Upgrades are manual and deliberate.
 
 M0b note: the wrapper could not be generated in Termux because no JDK
-or Gradle is installed. The verification workflow therefore pins Gradle
-9.6.0 with `gradle/actions/setup-gradle@v6`. The wrapper itself is still
-required by this decision and must be committed in M1; until then,
-`./gradlew` does not exist in the repository.
+or Gradle is installed, and the M0b verification therefore used
+`gradle/actions/setup-gradle` with a pinned version. Resolved in M1: the
+wrapper was generated once by the temporary `bootstrap/wrapper`
+workflow, committed (`gradlew`, `gradlew.bat`, `gradle/wrapper/`), and CI
+now runs `./gradlew` with the wrapper choosing Gradle 9.6.0.
 
 ### D012 — Build and Verification Environment
 
@@ -460,3 +461,96 @@ Consequences:
   remains open.
 - Any future claim of a passing build must cite a workflow run and its
   published results.
+
+### D014 — M1 Foundation Dependencies and Settings Persistence
+
+Date: 2026-11-25
+
+Decision:
+- Settings are persisted with DataStore Preferences 1.3.0.
+- The single app-level `PocketPanelViewModel` is created through
+  `lifecycle-viewmodel-compose` 2.11.1, matching the already selected
+  lifecycle version.
+- JVM unit tests use JUnit 4.13.2.
+- Instrumented tests use `androidx.test.ext:junit` 1.3.0,
+  `androidx.test:runner` 1.7.0 and Compose `ui-test-junit4` from BOM
+  2026.11.01 (Compose 1.13.0).
+- Theme mode is stored as the `ThemeMode` enum name; dynamic color is a
+  boolean. Defaults are `SYSTEM` and `true`.
+- The fallback palette is a blue Material 3 scheme; dynamic color is
+  used on API 31+ only.
+
+Alternatives considered:
+- `SharedPreferences`: rejected; architecture D009/§9 already selects
+  DataStore for settings and an asynchronous, typed flow is the chosen
+  contract.
+- Separate `MainViewModel` and `SettingsViewModel`: rejected for M1;
+  both would read the same repository and the screen count is two, so a
+  single view model with one immutable UI state is smaller and testable.
+- Navigation Compose: rejected; docs/ARCHITECTURE.md already defers it
+  until the screen count justifies it.
+- Adding `material-icons-core`: avoided; settings and back are standard
+  Material vector drawables in `res/drawable`, so no extra artifact is
+  needed.
+- Robolectric for persistence tests: rejected; the emulator job exists
+  and real Android DataStore behavior is what must be proven.
+
+Reason: Only official AndroidX and JUnit components, all stable and
+already compatible with the pinned toolchain, and no new framework.
+
+Verification sources (Google Maven `maven-metadata.xml`, checked
+2026-11-25; Maven Central for JUnit):
+- https://dl.google.com/android/maven2/androidx/datastore/datastore-preferences/maven-metadata.xml (1.3.0 stable)
+- https://dl.google.com/android/maven2/androidx/lifecycle/lifecycle-viewmodel-compose/maven-metadata.xml (2.11.1 stable)
+- https://dl.google.com/android/maven2/androidx/test/ext/junit/maven-metadata.xml (1.3.0 stable)
+- https://dl.google.com/android/maven2/androidx/test/runner/maven-metadata.xml (1.7.0 stable)
+- https://dl.google.com/android/maven2/androidx/compose/ui/ui-test-junit4/maven-metadata.xml (1.13.0, BOM-managed)
+- https://repo1.maven.org/maven2/junit/junit/maven-metadata.xml (4.13.2)
+
+Consequences:
+- Disk persistence is proven by an instrumented test that shuts one
+  DataStore down and reads the same file through a second instance.
+- The effective color values are not asserted by automated tests; theme
+  application is covered by manual review and by state-level UI checks.
+- Corrupt settings data degrades to defaults instead of crashing.
+
+### D015 — Emulator Verification Environment
+
+Date: 2026-11-25
+
+Decision: Instrumented tests and a cold-launch check run on an Android
+36 (API 36, `google_apis`, x86_64) emulator created by
+`ReactiveCircus/android-emulator-runner@v2.9.0` on `ubuntu-24.04`, with
+KVM enabled by the documented udev rule.
+
+Scope of the job:
+- `./gradlew :app:connectedDebugAndroidTest` (UI smoke and persistence
+  tests).
+- `adb shell am start -W -n dev.pocketpanel/.MainActivity`, requiring
+  `Status: ok`.
+- The app process must exist after launch.
+- The crash buffer must not contain `FATAL EXCEPTION`.
+
+Alternatives considered:
+- Physical device: unavailable to automation.
+- Managed device / Gradle Managed Devices: viable, but requires SDK
+  system-image provisioning and AGP device orchestration; the emulator
+  action is smaller for one API level.
+- Multiple API levels: deferred to M11's matrix; one API level keeps the
+  job and runtime minimal, as requested.
+
+Reason: A real install-and-launch check is the only way to verify the
+M1 launch and persistence claims. API 36 matches `targetSdk`.
+
+Verification sources:
+- https://github.com/ReactiveCircus/android-emulator-runner/releases (v2.9.0)
+- https://dl.google.com/android/repository/sys-img/google_apis/sys-img2-3.xml
+  (confirms `system-images;android-36;google_apis;x86_64`)
+- https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
+
+Consequences:
+- Every push that changes app or build files now runs a second,
+  slower job; it starts only after the build job succeeds.
+- Emulator evidence is published under `ci-results/emulator/` (status,
+  launch log, test report, logcat) and uploaded as an artifact.
+- API 26/29/34/35 behavior remains unverified until the M11 matrix.

@@ -6,39 +6,50 @@ unavailable test is reported as such, never implied to have passed.
 ## 1. Build Verification
 
 Builds run on GitHub-hosted `ubuntu-24.04` x86_64 runners through
-`.github/workflows/verify-toolchain.yml` (decision D012). There is no
-local JDK, Android SDK or Gradle in the Termux environment, so a build
-claim can only come from a workflow run.
+`.github/workflows/verify-toolchain.yml` (D012). There is no local JDK,
+Android SDK or Gradle in the Termux environment, so a build claim can
+only come from a workflow run.
 
-The workflow runs, in order:
+The committed Gradle wrapper selects Gradle 9.6.0 (D011). The workflow
+has two jobs:
 
-    gradle --version                        # Gradle and launcher JVM
-    gradle buildEnvironment                 # resolved plugins, KGP version
-    gradle :app:dependencies --configuration debugCompileClasspath
-    gradle :app:compileDebugKotlin --info   # Compose compiler
-    gradle :app:assembleDebug               # APK
-    gradle :app:testDebugUnitTest           # JVM unit tests
+Build job:
+
+    ./gradlew --version                     # wrapper + launcher JVM
+    ./gradlew buildEnvironment              # resolved plugins, KGP version
+    ./gradlew :app:dependencies --configuration debugCompileClasspath
+    ./gradlew :app:assembleDebug            # APK
+    ./gradlew :app:lintDebug                # Android lint
+    ./gradlew :app:testDebugUnitTest        # JVM unit tests
+
+Emulator job (after the build job succeeds, D015):
+
+    ./gradlew :app:connectedDebugAndroidTest
+    adb shell am start -W -n dev.pocketpanel/.MainActivity
+    adb shell pidof dev.pocketpanel
+    adb logcat -b crash -d                  # must not contain FATAL EXCEPTION
 
 Requirements for a build to count as verified:
 - The output is observed in a completed workflow run, not assumed.
 - AGP, Gradle, JDK and Kotlin versions in the output match
   docs/DECISIONS.md D005 and D013.
 - No prerelease dependency appears in the resolved graph.
-- A command that reports `NO-SOURCE` or `UP-TO-DATE` is not counted as
-  a passing test.
+- A command that reports `NO-SOURCE`, `SKIPPED` or `UP-TO-DATE` is not
+  counted as a passing test.
 
 Results are published to the `ci-results` branch (`status.txt`,
-`versions.log`, filtered dependency and build-environment logs, APK
-size and sha256), and full logs plus the debug APK are uploaded as
-workflow artifacts. Job console logs require GitHub authentication and
-are not used as the sole evidence.
+`versions.log`, filtered dependency and build-environment logs, test
+reports, lint report, APK size and sha256, and `emulator/` evidence),
+and full logs plus the debug APK are uploaded as workflow artifacts.
+Job console logs require GitHub authentication and are not used as the
+sole evidence.
 
 Current status (2026-11-25):
-- `assembleDebug` succeeds on `ubuntu-24.04` with AGP 9.5.2, Gradle
-  9.6.0, Temurin JDK 17.0.21 and Kotlin 2.4.21 (runs 45621464769 and
-  45621953748). Debug APK produced and hashed.
-- `testDebugUnitTest` reports `NO-SOURCE`; there are no tests yet.
-- Application launch is not covered by CI and remains unverified.
+- M0b: `assembleDebug` succeeded on `ubuntu-24.04` with AGP 9.5.2,
+  Gradle 9.6.0, Temurin JDK 17.0.21 and Kotlin 2.4.21 (runs 45621464769
+  and 45621953748).
+- M1: results pending in this section; recorded after the M1 workflow
+  runs.
 
 ## 2. Configuration Verification
 
@@ -46,23 +57,38 @@ Current status (2026-11-25):
   `minSdk 26` in the app module.
 - JDK 17 toolchain, `jvmTarget = 17`.
 - Manifest contains exactly the permissions listed in
-  docs/ARCHITECTURE.md section 8 and no others.
-- Overlay service declares `foregroundServiceType="specialUse"` and the
+  docs/ARCHITECTURE.md section 8 and no others. M1 declares none; the
+  overlay and notification entries become applicable with M2.
+- When the overlay service exists (M2+), it must declare
+  `foregroundServiceType="specialUse"` and the
   `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` property.
 - No `kotlin-android` plugin applied.
 - Dependency versions come from the version catalog only.
+- M1 dependencies: DataStore Preferences 1.3.0, lifecycle-viewmodel
+  compose 2.11.1, JUnit 4.13.2, androidx.test ext-junit 1.3.0 and
+  runner 1.7.0 (D014).
 
 ## 3. Application Verification
 
-- Cold start reaches the main screen without a crash.
-- Theme mode System / Light / Dark applies immediately and after
-  restart.
-- Dynamic color applies on API 31+; fallback palette is coherent below
-  that.
-- Settings changes persist across process death.
-- No hardcoded colors outside the theme package (review).
+Automated on the API 36 emulator job (D015):
+- Cold launch succeeds (`Status: ok`), the process stays alive and the
+  crash buffer is empty.
+- Main screen renders the app title and welcome card.
+- Settings opens and shows all three theme options.
+- Selecting Dark updates the selected state and the main-screen
+  appearance summary.
+- Theme mode is written to disk and read back by a fresh DataStore
+  instance (process-death persistence proxy).
+
+Manual or visual review (not asserted by automated tests):
+- Colors actually switch between light and dark; dynamic color applies
+  on API 31+; both palette variants are coherent.
+- Landscape and tablet widths keep content inside a readable column.
+- No hardcoded colors outside `ui/theme` (review).
 - TalkBack labels present on interactive elements; touch targets at
   least 48 dp.
+
+The remaining API-level matrix (section 6) stays manual until M11.
 
 ## 4. Overlay Verification
 

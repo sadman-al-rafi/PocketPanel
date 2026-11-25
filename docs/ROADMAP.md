@@ -125,7 +125,7 @@ Status: [~] Build verified 2026-11-25; launch smoke test pending
 ---
 
 ## M1 — Application Foundation and Material You
-Status: [ ] Not started
+Status: [~] In progress — implementation complete, CI verification running
 
 ### Objectives
 - Establish Material 3 design system.
@@ -133,6 +133,15 @@ Status: [ ] Not started
 - Implement dynamic color support where available.
 - Create the application settings screen.
 - Create the main application screen.
+
+### Prerequisites (requested with M1 authorization)
+- [x] Generate the Gradle wrapper at 9.6.0 and commit it (generated
+      by the temporary `bootstrap/wrapper` workflow, run evidence in
+      that branch; wrapper files merged into main).
+- [x] CI uses the committed wrapper (`gradle/actions/setup-gradle` with
+      no version override; `./gradlew` used for every command).
+- [~] Emulator smoke test added to CI; result pending.
+- [x] Workflow kept to two jobs (build, emulator).
 
 ### Acceptance Criteria
 - [ ] App uses Material 3.
@@ -332,10 +341,13 @@ Status: [ ] Not started
 ## Current Milestone
 M1 — Application Foundation and Material You
 
-Status: not started; awaiting explicit authorization.
+Status: in progress. Implementation is complete; CI build, unit tests,
+instrumented tests and the emulator launch check are running. M1 remains
+open until those results are recorded.
 
 M0a (research and documentation) is complete. M0b build verification is
-complete on the GitHub Actions x86_64 runner; its launch smoke test is
-still open and is carried into M1 startup.
+complete on the GitHub Actions x86_64 runner. Its launch smoke test is
+now covered by the M1 emulator job; the M0b row above will be closed when
+that job is green.
 
-Do not start M1 or later without explicit authorization.
+Do not start M2 or later without explicit authorization.
