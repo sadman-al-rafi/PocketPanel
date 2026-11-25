@@ -49,9 +49,12 @@ docs/DECISIONS.md. Platform constraints are recorded in sections below.
           monitoring/                 M3+
           permissions/                M2+
           service/                    M2+
-        res/                         Themes, strings, vector icons
+        res/                         Themes, strings, icons, adaptive launcher icon
       src/test/                      JVM unit tests
-      src/androidTest/               Instrumented tests
+      src/androidTest/               Instrumented tests (written, not executed; D016)
+
+    scripts/
+      check-static.sh                Local structural checks (no JDK/SDK)
 
 The application ID is `dev.pocketpanel`.
 
@@ -278,9 +281,11 @@ are used. No `QUERY_ALL_PACKAGES`.
 
 ## 11. Testing Strategy
 
-See docs/TESTING.md. Builds, JVM tests, instrumented tests and a cold
-launch run on GitHub Actions (D012, D015); the development environment
-has no JDK or Android SDK.
+See docs/TESTING.md. Local development uses `scripts/check-static.sh`,
+which needs no JDK or Android SDK. Compilation, lint, JVM tests and the
+debug APK require an explicitly authorized manual run of GitHub Actions
+(D012, D016). Instrumented tests exist but are not executed, and no
+emulator is provisioned (D016).
 
 ## 12. Explicitly Deferred
 

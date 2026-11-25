@@ -174,8 +174,9 @@ For each milestone:
 3. Review relevant APIs and technical constraints.
 4. Plan the smallest implementation that meets the requirements.
 5. Implement only the authorized milestone.
-6. Build the application.
-7. Run relevant tests.
+6. Run the local static checks that do not require CI.
+7. Build and run automated tests only when a CI run is authorized
+   (section 13).
 8. Inspect and resolve failures.
 9. Review changes for regressions.
 10. Update docs/ROADMAP.md.
@@ -196,3 +197,30 @@ At the end of each task, report:
 - The next milestone.
 
 Never start the next milestone without explicit authorization.
+
+## 13. CI Authorization Policy — Mandatory
+
+Remote CI consumes shared time and must be requested, not assumed.
+
+1. NEVER trigger a GitHub Actions workflow automatically.
+2. NEVER push commits, create pull requests or perform any other action
+   specifically intended to trigger CI without explicit permission.
+3. Do not use `git push` to find out whether the build works.
+4. Local checks that do not trigger remote CI are allowed and expected.
+5. Before requesting CI permission, explain exactly what needs testing,
+   why it is worth testing now and which workflow will run.
+6. Wait for explicit approval before triggering any remote workflow.
+7. This policy applies to every milestone and session until the user
+   explicitly changes it.
+
+Workflow requirements:
+- `.github/workflows/verify-toolchain.yml` is manual-only
+  (`workflow_dispatch`). Do not add `push`, `pull_request` or `schedule`
+  triggers.
+- The workflow performs the build, lint and unit tests. No emulator
+  installation, AVD creation or emulator boot is part of CI.
+- Do not repeatedly retry a failed run. Diagnose locally, explain the
+  change and request a new run.
+- Generate a debug APK only through an authorized CI run.
+- Report CI results only from a run that actually completed, and state
+  the run ID.

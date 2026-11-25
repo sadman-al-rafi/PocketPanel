@@ -1,0 +1,340 @@
+#!/usr/bin/env bash
+#
+# Local static checks for PocketPanel.
+#
+# Runs without a JDK, Android SDK, Gradle or network access. It verifies
+# structure and cross-references only; it cannot prove that the code
+# compiles or that the UI renders. Build and unit-test verification
+# requires an authorized CI run (AGENTS.md section 13, docs/TESTING.md).
+#
+# Usage: scripts/check-static.sh
+set -uo pipefail
+
+cd "$(dirname "$0")/.." || exit 1
+
+failures=0
+checks=0
+
+fail() {
+    printf 'FAIL  %s\n' "$1"
+    failures=$((failures + 1))
+}
+
+ok() {
+    checks=$((checks + 1))
+}
+
+section() {
+    printf '\n== %s ==\n' "$1"
+}
+
+# --- Required files ---------------------------------------------------------
+
+section "Required files"
+
+required_files=(
+    "gradlew"
+    "gradle/wrapper/gradle-wrapper.properties"
+    "gradle/wrapper/gradle-wrapper.jar"
+    "settings.gradle.kts"
+    "build.gradle.kts"
+    "gradle/libs.versions.toml"
+    "app/build.gradle.kts"
+    "app/src/main/AndroidManifest.xml"
+    "app/src/main/java/dev/pocketpanel/MainActivity.kt"
+    "app/src/main/java/dev/pocketpanel/PocketPanelApplication.kt"
+    "app/src/main/java/dev/pocketpanel/ui/theme/Theme.kt"
+    "app/src/main/java/dev/pocketpanel/ui/PocketPanelApp.kt"
+    "app/src/main/java/dev/pocketpanel/ui/PocketPanelViewModel.kt"
+    "app/src/main/java/dev/pocketpanel/ui/main/MainScreen.kt"
+    "app/src/main/java/dev/pocketpanel/ui/settings/SettingsScreen.kt"
+    "app/src/main/java/dev/pocketpanel/settings/SettingsRepository.kt"
+    "app/src/main/java/dev/pocketpanel/settings/DataStoreSettingsRepository.kt"
+    "app/src/main/res/values/strings.xml"
+    "app/src/main/res/values/themes.xml"
+    "app/src/main/res/values-night/themes.xml"
+    ".github/workflows/verify-toolchain.yml"
+)
+
+for file in "${required_files[@]}"; do
+    if [ -f "$file" ]; then
+        ok
+    else
+        fail "missing required file: $file"
+    fi
+done
+
+# --- XML well-formedness ----------------------------------------------------
+
+# No XML parser is installed, so this checks tag nesting and balance while
+# ignoring comments, declarations and self-closing tags. The whole file is
+# buffered so that tags split over several lines are handled.
+check_xml() {
+    local file=$1
+    if awk '
+        { buf = buf $0 "\n" }
+        END {
+            ok = 1
+            while ((i = index(buf, "<!--")) > 0) {
+                rest = substr(buf, i + 4)
+                j = index(rest, "-->")
+                if (j == 0) {
+                    print "unterminated comment"
+                    ok = 0
+                    buf = substr(buf, 1, i - 1)
+                    break
+                }
+                buf = substr(buf, 1, i - 1) substr(rest, j + 3)
+            }
+            while (match(buf, /<[^>]*>/)) {
+                tag = substr(buf, RSTART, RLENGTH)
+                buf = substr(buf, RSTART + RLENGTH)
+                if (tag ~ /^<\?/) continue
+                if (tag ~ /^<!/) continue
+                if (tag ~ /\/>$/) continue
+                if (tag ~ /^<\//) {
+                    name = tag
+                    sub(/^<\//, "", name)
+                    sub(/[ \t\r\n>].*$/, "", name)
+                    if (depth == 0) {
+                        printf "unexpected closing tag </%s>\n", name
+                        ok = 0
+                    } else if (stack[depth] != name) {
+                        printf "closing </%s> does not match <%s>\n", name, stack[depth]
+                        ok = 0
+                    } else {
+                        depth--
+                    }
+                } else {
+                    name = tag
+                    sub(/^</, "", name)
+                    sub(/[ \t\r\n\/>].*$/, "", name)
+                    depth++
+                    stack[depth] = name
+                }
+            }
+            if (depth != 0) { printf "unclosed <%s>\n", stack[depth]; ok = 0 }
+            exit (ok ? 0 : 1)
+        }
+    ' "$file"; then
+        ok
+    else
+        fail "malformed XML: $file"
+    fi
+}
+
+section "XML well-formedness"
+
+while IFS= read -r file; do
+    check_xml "$file"
+done < <(find app/src/main/res app/src/main/AndroidManifest.xml -name '*.xml' -type f | sort)
+
+# --- Resource declarations and references -----------------------------------
+
+section "Resource references"
+
+declared_strings=$(grep -o '<string name="[^"]*"' app/src/main/res/values/strings.xml \
+    | sed -E 's/.*name="([^"]*)"/\1/' | sort -u)
+declared_drawables=$(find app/src/main/res -type f \
+    \( -path '*/drawable*/*' -o -path '*/mipmap*/*' \) \
+    | sed -E 's#.*/##; s/\.(xml|png|webp|jpg)$//' | sort -u)
+declared_styles=$(grep -ho '<style name="[^"]*"' app/src/main/res/values*/themes.xml \
+    | sed -E 's/.*name="([^"]*)"/\1/' | sort -u)
+declared_colors=$(grep -ho '<color name="[^"]*"' app/src/main/res/values*/colors.xml \
+    | sed -E 's/.*name="([^"]*)"/\1/' | sort -u)
+
+verify_refs() {
+    local kind=$1 pattern=$2 strip=$3 declared=$4
+    local name
+    while IFS= read -r name; do
+        [ -n "$name" ] || continue
+        if ! grep -qxF -- "$name" <<< "$declared"; then
+            fail "$kind '$name' is referenced but not declared"
+        fi
+    done < <(grep -rhoE "$pattern" app/src 2>/dev/null | sed -E "$strip" | sort -u)
+}
+
+verify_refs "string" 'R\.string\.[A-Za-z0-9_]+' 's/^R\.string\.//' "$declared_strings"
+verify_refs "string" '@string/[A-Za-z0-9_.]+' 's#^@string/##' "$declared_strings"
+verify_refs "drawable" 'R\.drawable\.[A-Za-z0-9_]+' 's/^R\.drawable\.//' "$declared_drawables"
+verify_refs "drawable" '@drawable/[A-Za-z0-9_.]+' 's#^@drawable/##' "$declared_drawables"
+verify_refs "mipmap" 'R\.mipmap\.[A-Za-z0-9_]+' 's/^R\.mipmap\.//' "$declared_drawables"
+verify_refs "mipmap" '@mipmap/[A-Za-z0-9_.]+' 's#^@mipmap/##' "$declared_drawables"
+verify_refs "style" '@style/[A-Za-z0-9_.]+' 's#^@style/##' "$declared_styles"
+verify_refs "color" '@color/[A-Za-z0-9_.]+' 's#^@color/##' "$declared_colors"
+ok
+
+duplicates=$(grep -ho '<string name="[^"]*"' app/src/main/res/values/strings.xml \
+    | sed -E 's/.*name="([^"]*)"/\1/' | sort | uniq -d)
+if [ -n "$duplicates" ]; then
+    fail "duplicate string names: $(tr '\n' ' ' <<< "$duplicates")"
+else
+    ok
+fi
+
+# --- Manifest wiring --------------------------------------------------------
+
+section "Manifest wiring"
+
+manifest=app/src/main/AndroidManifest.xml
+
+if grep -q 'android:name=".PocketPanelApplication"' "$manifest" \
+    && [ -f app/src/main/java/dev/pocketpanel/PocketPanelApplication.kt ]; then
+    ok
+else
+    fail "manifest application class is missing or has no source file"
+fi
+
+if grep -q 'android:name=".MainActivity"' "$manifest" \
+    && [ -f app/src/main/java/dev/pocketpanel/MainActivity.kt ]; then
+    ok
+else
+    fail "manifest activity class is missing or has no source file"
+fi
+
+# M1 declares no permissions. Extend this list only with the permission and
+# the milestone that introduces it (docs/ARCHITECTURE.md section 8).
+allowed_permissions=""
+declared_permissions=$(grep -oE 'android\.permission\.[A-Z_]+' "$manifest" | sort -u)
+for permission in $declared_permissions; do
+    if grep -qwF -- "$permission" <<< "$allowed_permissions"; then
+        ok
+    else
+        fail "undeclared-by-policy permission in manifest: $permission"
+    fi
+done
+
+# --- Version catalog --------------------------------------------------------
+
+section "Version catalog"
+
+catalog=gradle/libs.versions.toml
+
+catalog_entries=$(awk '
+    /^\[/ { section = $0; gsub(/[\[\]]/, "", section); next }
+    /^[A-Za-z0-9_.-]+[ \t]*=/ {
+        name = $0
+        sub(/[ \t]*=.*/, "", name)
+        print section "|" name
+    }
+' "$catalog")
+
+while IFS= read -r accessor; do
+    [ -n "$accessor" ] || continue
+    path=${accessor#libs.}
+    section_name="libraries"
+    if [[ $path == plugins.* ]]; then
+        section_name="plugins"
+        path=${path#plugins.}
+    elif [[ $path == versions.* ]]; then
+        section_name="versions"
+        path=${path#versions.}
+    fi
+    alias=${path//./-}
+    if ! grep -qxF -- "$section_name|$alias" <<< "$catalog_entries"; then
+        fail "version catalog alias missing: [$section_name] $alias (from $accessor)"
+    fi
+done < <(grep -rhoE 'libs\.[A-Za-z0-9_.]+' \
+    app/build.gradle.kts build.gradle.kts settings.gradle.kts 2>/dev/null | sort -u)
+ok
+
+while IFS= read -r ref; do
+    [ -n "$ref" ] || continue
+    if ! grep -qxF -- "versions|$ref" <<< "$catalog_entries"; then
+        fail "version reference '$ref' has no [versions] entry"
+    fi
+done < <(grep -hoE 'version\.ref[ \t]*=[ \t]*"[^"]+"' "$catalog" \
+    | sed -E 's/.*"([^"]+)"/\1/' | sort -u)
+ok
+
+# --- Theme and UI rules -----------------------------------------------------
+
+section "Theme and UI rules"
+
+hardcoded=$(grep -rnE 'Color\(0x' app/src/main/java | grep -v '/ui/theme/' || true)
+if [ -n "$hardcoded" ]; then
+    fail "hardcoded color outside ui/theme:"
+    printf '%s\n' "$hardcoded" | sed 's/^/      /'
+else
+    ok
+fi
+
+test_tags_file=app/src/main/java/dev/pocketpanel/ui/TestTags.kt
+tag_names=$(grep -oE 'const val [A-Z_]+' "$test_tags_file" | awk '{print $3}' | sort -u)
+
+for name in $tag_names; do
+    if ! grep -rqF "TestTags.$name" app/src --include='*.kt' --exclude=TestTags.kt; then
+        fail "TestTags.$name is declared but never used"
+    fi
+done
+for name in $(grep -rhoE 'TestTags\.[A-Z_]+' app/src --include='*.kt' | sed 's/TestTags\.//' | sort -u); do
+    if ! grep -qxF -- "$name" <<< "$tag_names"; then
+        fail "unknown test tag constant: TestTags.$name"
+    fi
+done
+while IFS= read -r line; do
+    if ! grep -qE 'testTag\((TestTags\.[A-Z_]+|"[^"]+"|[A-Za-z_][A-Za-z0-9_]*\.testTag)\)' <<< "$line"; then
+        fail "testTag() argument is not a stable tag: $line"
+    fi
+done < <(grep -rn 'testTag(' app/src/main/java --include='*.kt')
+if grep -rqE 'val [A-Za-z_][A-Za-z0-9_]*\.testTag' app/src/main/java --include='*.kt'; then
+    ok
+else
+    fail "testTag() is called through a property that is not defined"
+fi
+
+# --- Workflow policy --------------------------------------------------------
+
+section "Workflow policy"
+
+workflow=.github/workflows/verify-toolchain.yml
+
+if grep -q 'workflow_dispatch:' "$workflow"; then
+    ok
+else
+    fail "workflow has no workflow_dispatch trigger"
+fi
+
+if grep -qE '^  (push|pull_request|schedule):' "$workflow"; then
+    fail "workflow must not run automatically (push/pull_request/schedule)"
+else
+    ok
+fi
+
+if grep -qi 'emulator' "$workflow"; then
+    fail "workflow must not install or boot an emulator (D016)"
+else
+    ok
+fi
+
+if grep -qE '^\s+- name: Run unit tests' "$workflow" \
+    && grep -qE ':app:testDebugUnitTest' "$workflow"; then
+    ok
+else
+    fail "workflow no longer runs the JVM unit tests"
+fi
+
+# --- Source hygiene ---------------------------------------------------------
+
+section "Source hygiene"
+
+markers=$(grep -rnE 'TODO|FIXME' app/src/main/java app/src/main/res 2>/dev/null || true)
+if [ -n "$markers" ]; then
+    fail "unresolved markers in application sources:"
+    printf '%s\n' "$markers" | sed 's/^/      /'
+else
+    ok
+fi
+
+# --- Result -----------------------------------------------------------------
+
+printf '\n----------------------------------------\n'
+if [ "$failures" -eq 0 ]; then
+    printf 'Static checks passed (%d checks).\n' "$checks"
+    printf 'This does not prove compilation or runtime behavior.\n'
+    exit 0
+fi
+
+printf 'Static checks failed: %d failure(s), %d passed check(s).\n' \
+    "$failures" "$checks"
+exit 1

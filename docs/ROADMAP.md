@@ -70,13 +70,13 @@ that milestone; the build itself was verified in M0b.
 ---
 
 ## M0b — Project Generation and Build Verification
-Status: [~] Build verified 2026-11-25; launch smoke test pending
+Status: [~] Build verified 2026-11-25; launch smoke test deferred (D016)
 
 ### Objectives
 - Create the native Android project with the pinned toolchain.
 - Record the effective Kotlin/KGP version from the build.
-- Generate and verify the Gradle wrapper at 9.6.0. (Not done; see
-  Remaining below.)
+- Generate and verify the Gradle wrapper at 9.6.0. (Resolved in M1;
+  see Remaining below.)
 - Establish the initial project architecture from
   docs/ARCHITECTURE.md.
 - Produce a verified debug build.
@@ -84,7 +84,7 @@ Status: [~] Build verified 2026-11-25; launch smoke test pending
 ### Acceptance Criteria
 - [x] Project scaffolding generated with AGP 9.5.2, Gradle 9.6.0,
       JDK 17. (Temporary verification scaffold only; no features. The
-      wrapper is not committed yet; see Remaining below.)
+      wrapper and the real project structure were delivered in M1.)
 - [x] Version catalog contains only the versions recorded in D005,
       with `compileSdk` corrected to 37.1 per D006 and D013.
 - [x] Build classpath recorded, confirming Kotlin 2.4.21 and the
@@ -92,8 +92,8 @@ Status: [~] Build verified 2026-11-25; launch smoke test pending
 - [x] Project builds successfully with real, observed output
       (`assembleDebug` success; APK 12,884,656 bytes, sha256
       `da26cee2…`).
-- [ ] Basic application launches. Not tested: CI runs no emulator or
-      device.
+- [ ] Basic application launches. Not tested: no emulator or device is
+      provisioned and device testing is suspended (D016).
 - [x] No prerelease dependency resolved.
 - [x] Verification method recorded in docs/TESTING.md and
       docs/DECISIONS.md (D012, D013).
@@ -113,19 +113,19 @@ Status: [~] Build verified 2026-11-25; launch smoke test pending
   test-pass claim is made.
 
 ### Remaining Before This Milestone Closes
-- Launch smoke test on an emulator or physical device.
-- Commit the Gradle wrapper (`gradlew`, `gradlew.bat`,
-  `gradle/wrapper/`). It could not be generated locally without a JDK
-  and Gradle, so M0b pinned Gradle 9.6.0 through
-  `gradle/actions/setup-gradle@v6` instead. D011 requires the wrapper,
-  so this is a documented deviation, not a silently met criterion.
-- Replace the temporary verification scaffold with the real project
-  structure when M1 is authorized.
+- Launch smoke test on an emulator or physical device. Suspended by
+  D016: no emulator is provisioned and no device test is authorized.
+  This criterion is **not** satisfied; it stays open until device
+  testing is reintroduced.
+- Gradle wrapper: resolved in M1. `gradlew`, `gradlew.bat` and
+  `gradle/wrapper/` are committed (D011) and CI uses `./gradlew`.
+- Temporary verification scaffold: replaced by the M1 project structure.
 
 ---
 
 ## M1 — Application Foundation and Material You
-Status: [~] In progress — implementation complete, CI verification running
+Status: [~] Implementation complete; static checks pass; CI verification
+requires an authorized run (D016)
 
 ### Objectives
 - Establish Material 3 design system.
@@ -140,16 +140,49 @@ Status: [~] In progress — implementation complete, CI verification running
       that branch; wrapper files merged into main).
 - [x] CI uses the committed wrapper (`gradle/actions/setup-gradle` with
       no version override; `./gradlew` used for every command).
-- [~] Emulator smoke test added to CI; result pending.
-- [x] Workflow kept to two jobs (build, emulator).
+- [x] Emulator smoke test: withdrawn at the user's direction after three
+      environmental failures (D016). No emulator job exists.
+- [x] Workflow kept minimal: one manual `workflow_dispatch` job that
+      builds, lints and runs JVM unit tests.
 
 ### Acceptance Criteria
-- [ ] App uses Material 3.
-- [ ] Theme switching works.
-- [ ] Theme selection persists.
-- [ ] UI is responsive.
-- [ ] No unnecessary decorative styling.
-- [ ] Build and tests pass.
+- [x] App uses Material 3 (`MaterialTheme` with a Material 3 color
+      scheme, typography and shapes; no decorative styling).
+- [x] Theme switching is implemented for System / Light / Dark and
+      resolves through `ThemeMode.resolveDarkTheme` (5 JVM unit tests
+      passed in run 45637392750).
+- [~] Theme selection persists through DataStore; the persistence test
+      is written but has not run, so persistence is not yet verified at
+      runtime.
+- [x] UI is responsive by construction: a 640 dp content column, 16/32
+      dp adaptive padding, scrollable screens, edge-to-edge insets.
+      Visual confirmation at other widths is still pending.
+- [x] No unnecessary decorative styling: no gradients, glassmorphism,
+      custom icon packs or decorative animation.
+- [x] Dynamic color is implemented for API 31+ with a coherent blue
+      fallback palette below it, and the setting is disabled with an
+      explanation when unavailable. Runtime appearance is unverified.
+- [~] Build and JVM tests pass for the current app sources (runs
+      45637392750 and 45646689211: assembleDebug, lint and 5 unit tests
+      succeeded). Instrumented tests are not executed (D016), and the
+      APK hash from those runs predates the launcher-icon change.
+
+### Verification Performed
+- Static checks: `scripts/check-static.sh`, 44 checks passing
+  (2026-11-25). Structural only; no compiler involved.
+- Build/lint/unit tests: run 45637392750 (commit `cf600de`) and run
+  45646689211 (commit `6a59944`), both successful. App sources are
+  unchanged since `cf600de` except for the launcher icon added after
+  those runs, so a fresh authorized run is required before the APK is
+  called verified.
+- Instrumented tests: written, never executed. No result is claimed.
+- Emulator launch: not attempted further; suspended by D016.
+
+### Outstanding
+- One authorized CI run for the final M1 sources (build, lint, unit
+  tests, APK hash).
+- Runtime confirmation of theme switching, persistence and dynamic
+  color, once device testing is reintroduced and authorized.
 
 ---
 
@@ -341,13 +374,16 @@ Status: [ ] Not started
 ## Current Milestone
 M1 — Application Foundation and Material You
 
-Status: in progress. Implementation is complete; CI build, unit tests,
-instrumented tests and the emulator launch check are running. M1 remains
-open until those results are recorded.
+Status: implementation complete and static checks pass. M1 stays in
+progress until one authorized CI run verifies the final sources (build,
+lint, unit tests, APK) and until runtime behavior is confirmed when
+device testing resumes. No workflow has been triggered for these
+changes (D016).
 
 M0a (research and documentation) is complete. M0b build verification is
-complete on the GitHub Actions x86_64 runner. Its launch smoke test is
-now covered by the M1 emulator job; the M0b row above will be closed when
-that job is green.
+complete on the GitHub Actions x86_64 runner; its launch smoke test is
+deferred and remains unsatisfied because emulator testing is suspended
+(D016).
 
-Do not start M2 or later without explicit authorization.
+Do not start M2 or later without explicit authorization, and do not run
+CI without explicit authorization for that run.

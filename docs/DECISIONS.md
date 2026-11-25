@@ -383,6 +383,8 @@ Consequences:
   `GITHUB_TOKEN` with `contents: write` only to push results.
 - Emulator or device launch testing is not covered by this environment
   and remains unverified.
+- Since D016 the workflow is manual-only (`workflow_dispatch`) and runs
+  only when the project owner authorizes a run.
 
 ### D013 — Toolchain Verification Results
 
@@ -517,6 +519,9 @@ Consequences:
 ### D015 — Emulator Verification Environment
 
 Date: 2026-11-25
+Status: Withdrawn 2026-11-25 by D016. Emulator and device testing are
+suspended. The analysis below is kept as history; the emulator job no
+longer exists in the workflow.
 
 Decision: Instrumented tests and a cold-launch check run on an Android
 36 (API 36, `google_apis`, x86_64) emulator on `ubuntu-24.04`, with KVM
@@ -590,3 +595,47 @@ Consequences:
   environment, install/AVD/boot/launch logs, test report, logcat,
   diagnostics) and uploaded as an artifact.
 - API 26/29/34/35 behavior remains unverified until the M11 matrix.
+
+### D016 — CI Is Manual and Emulator Testing Is Suspended
+
+Date: 2026-11-25
+Status: Accepted (user-directed).
+
+Decision:
+- `.github/workflows/verify-toolchain.yml` is manual-only
+  (`workflow_dispatch`). No `push`, `pull_request` or `schedule`
+  trigger exists, and none may be added.
+- No workflow is started, and no commit is pushed in order to start
+  one, without explicit permission for that run.
+- The emulator job is removed. No emulator, AVD, system image or
+  instrumented test runs in CI for now. The instrumented tests remain
+  in the repository but are not executed.
+- Development relies on `scripts/check-static.sh` (structure,
+  cross-references, policy checks) plus code review. Build, lint, unit
+  tests and the debug APK are produced only in an authorized CI run.
+- CI is requested when the app has meaningful functionality to verify,
+  not after every change.
+
+Reason: three consecutive emulator attempts failed for environmental
+reasons (retired action runtime, an action that produced no logs, and an
+`avdmanager` stdin hang). The app is still a foundation shell; repeated
+remote runs cost more than they verify. Static checks catch a useful
+class of defects locally, and a single authorized run at a meaningful
+checkpoint is cheaper and easier to interpret.
+
+Alternatives considered:
+- Keep the emulator job but skip it by default: rejected; a dormant job
+  still needs maintenance and invites accidental runs.
+- Gradle Managed Devices: same cost and provisioning problem, deferred.
+- Drop automated checks entirely: rejected; `check-static.sh` is cheap
+  and catches missing resources and broken wiring.
+
+Consequences:
+- Compilation, lint, unit-test and runtime behavior are unverified
+  between authorized runs. Reports must say so explicitly.
+- The M1 APK does not exist yet; it is produced by the first authorized
+  run.
+- `ReactiveCircus/android-emulator-runner`, system-image downloads and
+  KVM setup are no longer dependencies of the project.
+- Reintroducing device testing requires a new decision and explicit
+  authorization.
