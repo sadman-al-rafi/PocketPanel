@@ -9,7 +9,13 @@ plugins {
 
 android {
     namespace = "dev.pocketpanel"
-    compileSdk = 37
+
+    // Compose 1.13.0 (BOM 2026.11.01) AAR metadata requires API 37.1+.
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         applicationId = "dev.pocketpanel"

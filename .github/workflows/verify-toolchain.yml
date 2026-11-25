@@ -5,6 +5,13 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "app/**"
+      - "gradle/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - ".github/workflows/verify-toolchain.yml"
 
 permissions:
   contents: write
@@ -131,9 +138,11 @@ jobs:
           } > ci-results/status.txt
 
           cp "$RUNNER_TEMP/logs/versions.log" ci-results/versions.log 2>/dev/null
-          grep -E "kotlin|compose|com\\.android\\.tools\\.build" \
-            "$RUNNER_TEMP/logs/buildEnvironment.log" \
-            > ci-results/buildEnvironment-filtered.log 2>/dev/null
+          cp "$RUNNER_TEMP/logs/summary.md" ci-results/summary.md 2>/dev/null
+          cp "$RUNNER_TEMP/logs/buildEnvironment.log" \
+            ci-results/buildEnvironment.log 2>/dev/null
+          sha256sum app/build/outputs/apk/debug/*.apk \
+            > ci-results/apk-sha256.txt 2>/dev/null
           grep -E "kotlin|compose" \
             "$RUNNER_TEMP/logs/dependencies-debugCompileClasspath.log" \
             > ci-results/dependencies-filtered.log 2>/dev/null
