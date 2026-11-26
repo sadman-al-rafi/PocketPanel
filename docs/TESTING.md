@@ -41,7 +41,15 @@ do not need them:
   exists in `TestTags`.
 - Manifest declares only the permissions listed in
   docs/ARCHITECTURE.md section 8.
+- The overlay service is declared, not exported, uses
+  `specialUse` with the subtype property, and has a source file.
+- The overlay window uses `TYPE_APPLICATION_OVERLAY`,
+  `FLAG_NOT_FOCUSABLE` and `START_NOT_STICKY`.
+- No `BOOT_COMPLETED` receiver and no legacy `TYPE_PHONE`/
+  `TYPE_SYSTEM_ALERT` window type exist.
 - No `TODO`/`FIXME` markers left in application sources.
+
+As of M2 the script runs 75 checks.
 
 These checks are structural. They cannot prove that the code compiles
 or that the UI renders; only an authorized CI run can do that.
@@ -89,6 +97,9 @@ Current status (2026-11-26):
 - Runtime behavior (launch, theme switching, persistence, dynamic
   color) remains unverified because no device or emulator test is
   authorized (D016).
+- M2: no run has been authorized yet. The overlay code is committed
+  and locally checked only. Compilation, lint, unit tests and APK
+  results will be recorded here after an authorized manual run.
 
 ## 4. Configuration Verification
 
@@ -96,16 +107,17 @@ Current status (2026-11-26):
   `minSdk 26` in the app module.
 - JDK 17 toolchain, `jvmTarget = 17`.
 - Manifest contains exactly the permissions listed in
-  docs/ARCHITECTURE.md section 8 and no others. M1 declares none; the
-  overlay and notification entries become applicable with M2.
-- When the overlay service exists (M2+), it must declare
-  `foregroundServiceType="specialUse"` and the
-  `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` property.
+  docs/ARCHITECTURE.md section 8 and no others. M2 declares
+  `SYSTEM_ALERT_WINDOW`, `FOREGROUND_SERVICE`,
+  `FOREGROUND_SERVICE_SPECIAL_USE` and `POST_NOTIFICATIONS`.
+- The overlay service declares `foregroundServiceType="specialUse"`
+  and the `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` property.
 - No `kotlin-android` plugin applied.
 - Dependency versions come from the version catalog only.
-- M1 dependencies: DataStore Preferences 1.3.0, lifecycle-viewmodel
-  compose 2.11.1, JUnit 4.13.2, androidx.test ext-junit 1.3.0 and
-  runner 1.7.0 (D014).
+- M1/M2 dependencies: DataStore Preferences 1.3.0,
+  lifecycle-runtime-compose and lifecycle-viewmodel-compose 2.11.1,
+  JUnit 4.13.2, androidx.test ext-junit 1.3.0 and runner 1.7.0 (D014).
+  M2 adds no new dependency.
 
 ## 5. Application Verification
 
@@ -121,6 +133,9 @@ Written but not yet executed:
 
 JVM unit tests (executed only in an authorized CI run):
 - `ThemeModeTest`: storage mapping, fallback, and dark-theme resolution.
+- `OverlayGeometryTest`: edge placement, vertical clamping, snap to
+  nearest edge, fraction derivation and degenerate screen sizes.
+- `HandleEdgeTest`: storage mapping, fallback and default preferences.
 
 Manual review checklist (no emulator; code and layout review):
 - Colors come from `MaterialTheme.colorScheme`; no literal colors
@@ -138,21 +153,23 @@ rendering is not possible without a device and remains unverified.
 ## 6. Overlay Verification
 
 Each case must be tested on a real device or an emulator with the
-overlay permission state controlled manually.
+overlay permission state controlled manually. M2 implementation status
+is noted per case; none of these cases has been executed yet.
 
-| Case | Expected |
-|---|---|
-| Permission not granted | Explanatory UI, no window attempt, no crash |
-| Permission granted, overlay enabled | Handle appears at the saved edge |
-| Permission revoked while running | Window removed, service stops, state updates |
-| Permission revoked while app is backgrounded | Detected on next start/resume, no crash |
-| Drag to each edge | Handle clamps inside bounds, edge persists |
-| Panel open/close via handle | Toggles without leaving the app |
-| Outside tap while expanded | Panel collapses |
-| Screen off / on | Overlay recovers, no duplicate windows |
-| Rotation and display size change | Handle remains visible and reachable |
-| Device reboot | Overlay stays off until the user enables it |
-| Notification permission denied (API 33+) | Service runs, caveat shown in settings |
+| Case | Expected | M2 status |
+|---|---|---|
+| Permission not granted | Explanatory UI, no window attempt, no crash | Implemented, unverified |
+| Permission granted, overlay enabled | Handle appears at the saved edge | Implemented, unverified |
+| Permission revoked while running | Window removed, service stops, state updates | Implemented, unverified |
+| Permission revoked while app is backgrounded | Detected on next start/resume, no crash | Implemented, unverified |
+| Drag to each edge | Handle clamps inside bounds, edge persists | Implemented, unverified |
+| Panel open/close via handle | Toggles without leaving the app | Implemented, unverified |
+| Outside tap while expanded | Panel collapses | Deferred (D018) |
+| Screen off / on | Overlay recovers, no duplicate windows | Deferred (D018) |
+| Rotation and display size change | Handle remains visible and reachable | Implemented, unverified |
+| Device reboot | Overlay stays off until the user enables it | By design (no boot receiver) |
+| Notification permission denied (API 33+) | Service runs, caveat shown in settings | Implemented, unverified |
+| Service notification Stop action | Overlay stops and setting turns off | Implemented, unverified |
 
 ## 7. Monitoring Verification
 

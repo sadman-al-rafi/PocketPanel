@@ -20,13 +20,29 @@
 
     <string name="main_welcome_title">Welcome to PocketPanel</string>
     <string name="main_welcome_body">System monitoring and quick tools, one gesture away.</string>
-    <string name="main_foundation_note">This build contains the application foundation. The floating sidebar and monitoring arrive in later milestones.</string>
+    <string name="main_foundation_note">This build includes the application foundation and the floating handle. System monitoring arrives in a later milestone.</string>
     <string name="current_appearance">Current appearance</string>
     <string name="change_in_settings">Change in settings</string>
 
     <string name="on">On</string>
     <string name="off">Off</string>
     <string name="not_available">Not available</string>
+
+    <string name="overlay">Floating panel</string>
+    <string name="overlay_description">Show a handle on the screen edge to open PocketPanel over other apps.</string>
+    <string name="overlay_permission_required">Overlay permission is required.</string>
+    <string name="overlay_permission_grant">Allow overlay permission</string>
+    <string name="overlay_permission_unavailable">This device does not provide the overlay permission screen.</string>
+    <string name="overlay_notification_denied">Notifications are off, so the service notification is hidden. The floating handle still works.</string>
+    <string name="overlay_handle_description">Floating panel handle. Tap to open, drag to move.</string>
+    <string name="overlay_panel_title">PocketPanel</string>
+    <string name="overlay_panel_body">Monitoring arrives in a later milestone. Drag the handle to move it.</string>
+    <string name="overlay_panel_hide">Hide</string>
+    <string name="overlay_notification_channel">Floating panel</string>
+    <string name="overlay_notification_channel_description">Keeps the floating handle running.</string>
+    <string name="overlay_notification_title">Floating handle active</string>
+    <string name="overlay_notification_text">Tap to open PocketPanel.</string>
+    <string name="overlay_notification_stop">Stop</string>
 
     <string name="settings_saved_note">Appearance changes apply immediately and are saved on this device.</string>
 </resources>

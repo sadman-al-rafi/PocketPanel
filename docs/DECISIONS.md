@@ -679,3 +679,64 @@ Consequences:
   acceptable because appearance is device-specific; it can be revisited
   if a future feature stores user-authored data.
 - Lint remains at 3 accepted warnings instead of 5.
+
+### D018 — M2 Overlay Window Implementation
+
+Date: 2026-11-26
+Status: Accepted.
+
+Context: M2 adds the floating handle and panel. Several shapes were
+possible; the goal was the smallest reliable implementation that meets
+the M2 acceptance criteria without borrowing M3 work.
+
+Decision:
+- Use a single overlay window for the handle and the panel, not two
+  windows. Collapsed it is `48 x 96 dp`; expanded it is `320 x 176 dp`
+  (`48 dp` handle plus a `272 x 176 dp` panel). One window means one
+  `LayoutParams`, no inter-window positioning, and a single
+  add/update/remove path. The panel opens toward the screen interior.
+- Host the content in a `ComposeView` with only a service-scoped
+  `LifecycleOwner`. Saved-state and ViewModel owners are omitted
+  because the overlay has no saved state and no ViewModels. This is
+  smaller than a generic multi-owner wrapper and cannot leak an
+  Activity.
+- Compute placement against the usable window area (display minus
+  system bars) and apply offsets directly with
+  `Gravity.TOP or Gravity.START`. No manual inset addition is needed
+  because the window does not draw edge to edge.
+- Drag with screen coordinates from `getLocationOnScreen`, not
+  Compose-local deltas. Moving the window under the finger cancels
+  local deltas and makes the drag stall; screen coordinates keep the
+  gesture stable.
+- Snap to the nearest horizontal edge on release and persist the edge
+  plus the clamped vertical fraction in one DataStore edit
+  (`setHandlePosition`), so the two values cannot disagree.
+- Keep the service `specialUse` and `START_NOT_STICKY` as decided in
+  D008. Do not add a boot receiver. Start only from a visible app or an
+  existing overlay.
+- Treat notification denial as a caveat, not a failure. The overlay
+  keeps working without the notification.
+
+Alternatives considered:
+- Two windows (handle and panel separately): rejected; doubles the
+  window lifecycle and requires keeping two positions in sync.
+- Full `SavedStateRegistryOwner` and `ViewModelStoreOwner` in the
+  overlay: rejected; neither feature is used, and the extra surface
+  would need its own tests.
+- Local drag deltas: rejected after reasoning about window movement
+  feedback.
+- Sticky service or boot receiver: rejected; contradicts D008 and the
+  Android 15+ foreground-service start rules.
+
+Consequences:
+- Outside-tap collapse is not implemented in M2: a non-focusable
+  overlay window does not receive touches outside its bounds. The
+  "Hide" button and the handle toggle cover closing the panel.
+- Screen-off collapse, boot restore and permission-loss detection
+  while the app is backgrounded are deferred and tracked in
+  `docs/ROADMAP.md`.
+- The window sizes are fixed in dp; very small displays may clip the
+  expanded panel. This is acceptable for M2 and can be revisited if a
+  device shows a problem.
+- Runtime behavior still requires device testing (D016); the next
+  authorized CI run verifies compilation, lint and unit tests only.

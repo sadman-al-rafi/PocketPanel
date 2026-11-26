@@ -13,10 +13,14 @@ import dev.pocketpanel.ui.settings.SettingsScreen
 @Composable
 fun PocketPanelApp(
     uiState: PocketPanelUiState,
+    overlayPermissionGranted: Boolean,
+    notificationPermissionGranted: Boolean,
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
     onThemeModeSelected: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
+    onOverlayEnabledChange: (Boolean) -> Unit,
+    onRequestOverlayPermission: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -25,6 +29,10 @@ fun PocketPanelApp(
         when (uiState.screen) {
             AppScreen.Main -> MainScreen(
                 preferences = uiState.preferences,
+                overlayPermissionGranted = overlayPermissionGranted,
+                notificationPermissionGranted = notificationPermissionGranted,
+                onOverlayEnabledChange = onOverlayEnabledChange,
+                onRequestOverlayPermission = onRequestOverlayPermission,
                 onOpenSettings = onOpenSettings,
             )
 

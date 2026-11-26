@@ -50,6 +50,16 @@ required_files=(
     "app/src/main/java/dev/pocketpanel/ui/settings/SettingsScreen.kt"
     "app/src/main/java/dev/pocketpanel/settings/SettingsRepository.kt"
     "app/src/main/java/dev/pocketpanel/settings/DataStoreSettingsRepository.kt"
+    "app/src/main/java/dev/pocketpanel/settings/HandleEdge.kt"
+    "app/src/main/java/dev/pocketpanel/overlay/OverlayContent.kt"
+    "app/src/main/java/dev/pocketpanel/overlay/OverlayGeometry.kt"
+    "app/src/main/java/dev/pocketpanel/overlay/OverlayLifecycleOwner.kt"
+    "app/src/main/java/dev/pocketpanel/overlay/OverlayPermission.kt"
+    "app/src/main/java/dev/pocketpanel/overlay/OverlayService.kt"
+    "app/src/main/java/dev/pocketpanel/overlay/OverlayWindowController.kt"
+    "app/src/test/java/dev/pocketpanel/overlay/OverlayGeometryTest.kt"
+    "app/src/test/java/dev/pocketpanel/settings/HandleEdgeTest.kt"
+    "app/src/main/res/drawable/ic_notification.xml"
     "app/src/main/res/values/strings.xml"
     "app/src/main/res/values/themes.xml"
     "app/src/main/res/values-night/themes.xml"
@@ -199,9 +209,15 @@ else
     fail "manifest activity class is missing or has no source file"
 fi
 
-# M1 declares no permissions. Extend this list only with the permission and
-# the milestone that introduces it (docs/ARCHITECTURE.md section 8).
-allowed_permissions=""
+# The manifest may only declare permissions required by an implemented
+# milestone (docs/ARCHITECTURE.md section 8). Extend this list together with
+# the feature that uses the permission.
+allowed_permissions="
+android.permission.SYSTEM_ALERT_WINDOW
+android.permission.FOREGROUND_SERVICE
+android.permission.FOREGROUND_SERVICE_SPECIAL_USE
+android.permission.POST_NOTIFICATIONS
+"
 declared_permissions=$(grep -oE 'android\.permission\.[A-Z_]+' "$manifest" | sort -u)
 for permission in $declared_permissions; do
     if grep -qwF -- "$permission" <<< "$allowed_permissions"; then
@@ -210,6 +226,77 @@ for permission in $declared_permissions; do
         fail "undeclared-by-policy permission in manifest: $permission"
     fi
 done
+
+service_source=app/src/main/java/dev/pocketpanel/overlay/OverlayService.kt
+controller_source=app/src/main/java/dev/pocketpanel/overlay/OverlayWindowController.kt
+permission_source=app/src/main/java/dev/pocketpanel/overlay/OverlayPermission.kt
+
+if grep -q 'android:name=".overlay.OverlayService"' "$manifest" \
+    && [ -f "$service_source" ]; then
+    ok
+else
+    fail "manifest overlay service is missing or has no source file"
+fi
+
+if grep -q 'android:exported="false"' "$manifest"; then
+    ok
+else
+    fail "overlay service must not be exported"
+fi
+
+if grep -q 'android:foregroundServiceType="specialUse"' "$manifest"; then
+    ok
+else
+    fail "overlay service must declare the specialUse foreground type"
+fi
+
+if grep -q 'android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE' "$manifest"; then
+    ok
+else
+    fail "overlay service is missing the special-use subtype property"
+fi
+
+if grep -q 'TYPE_APPLICATION_OVERLAY' "$controller_source"; then
+    ok
+else
+    fail "overlay window does not use TYPE_APPLICATION_OVERLAY"
+fi
+
+if grep -q 'FLAG_NOT_FOCUSABLE' "$controller_source"; then
+    ok
+else
+    fail "overlay window must be non-focusable"
+fi
+
+if grep -q 'START_NOT_STICKY' "$service_source"; then
+    ok
+else
+    fail "overlay service must use START_NOT_STICKY"
+fi
+
+if grep -q 'ServiceCompat.startForeground' "$service_source"; then
+    ok
+else
+    fail "overlay service must call startForeground"
+fi
+
+if grep -q 'canDrawOverlays' "$permission_source"; then
+    ok
+else
+    fail "overlay permission helper does not check Settings.canDrawOverlays"
+fi
+
+if grep -rq 'BOOT_COMPLETED' app/src/main; then
+    fail "overlay must not start from a boot receiver"
+else
+    ok
+fi
+
+if grep -rq 'TYPE_PHONE\|TYPE_SYSTEM_ALERT' app/src/main/java; then
+    fail "legacy overlay window types are not allowed"
+else
+    ok
+fi
 
 # --- Version catalog --------------------------------------------------------
 

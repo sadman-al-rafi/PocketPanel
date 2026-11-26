@@ -203,7 +203,9 @@ Never start the next milestone without explicit authorization.
 Remote CI consumes shared time and must be requested, not assumed.
 
 1. NEVER trigger a GitHub Actions workflow automatically.
-2. NEVER push commits, create pull requests or perform any other action
+2. Pushing commits to the repository is allowed and does not require
+   permission, because the workflow is manual-only and a push cannot
+   start CI. Never create a pull request or take any other action
    specifically intended to trigger CI without explicit permission.
 3. Do not use `git push` to find out whether the build works.
 4. Local checks that do not trigger remote CI are allowed and expected.

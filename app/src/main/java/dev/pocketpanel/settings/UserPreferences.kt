@@ -9,4 +9,7 @@ package dev.pocketpanel.settings
 data class UserPreferences(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
+    val overlayEnabled: Boolean = false,
+    val handleEdge: HandleEdge = HandleEdge.RIGHT,
+    val handleVerticalFraction: Float = 0.5f,
 )

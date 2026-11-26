@@ -118,24 +118,41 @@ Verified platform facts:
   `WindowManager.InvalidDisplayException` when permission is missing or
   the display changed; both must be caught and mapped to a state.
 
-Proposed design:
+Implemented design (M2):
 
-- `OverlayService` owns the `WindowManager` and all overlay views.
-- The handle is a small window: `TYPE_APPLICATION_OVERLAY`,
-  `FLAG_NOT_FOCUSABLE`, `PixelFormat.TRANSLUCENT`, edge `Gravity`,
-  `WRAP_CONTENT`, clamped inside display bounds and cutout-safe insets.
-- The panel is rendered with `ComposeView`. An overlay window is not
-  Activity-backed, so the service must attach
-  `ViewTreeLifecycleOwner`, `ViewTreeSavedStateRegistryOwner` and
-  `ViewTreeViewModelStoreOwner` itself using a service-scoped owner
-  that follows the service lifecycle. Without this, Compose in the
-  overlay will not work correctly.
-- Drag updates horizontal/vertical offset within safe bounds; the
-  resting edge and fractional vertical position are persisted.
-- Tapping the handle toggles the panel; the panel collapses on outside
-  touch, back-style dismissal and screen off.
-- The window is removed synchronously in `onDestroy` and on permission
-  loss before the service stops.
+- `OverlayService` owns the `WindowManager` and the single overlay window.
+- One window hosts both the handle and the panel. Collapsed it is
+  `48 x 96 dp`; expanded it is `320 x 176 dp` (`48 dp` handle plus a
+  `272 x 176 dp` panel). The panel height is `176 dp` so the "Hide"
+  button fits at every supported density.
+- The window is `TYPE_APPLICATION_OVERLAY` with `FLAG_NOT_FOCUSABLE`,
+  `PixelFormat.TRANSLUCENT` and `Gravity.TOP or Gravity.START`.
+  `layoutInDisplayCutoutMode` is `NEVER` on API 28+.
+- The panel is rendered with a `ComposeView` wrapped in a
+  `ContextThemeWrapper` so the Material 3 theme resolves. An overlay
+  window is not Activity-backed, so the service attaches
+  `ViewTreeLifecycleOwner` itself using a service-scoped
+  `OverlayLifecycleOwner`. Saved-state and ViewModel owners are omitted
+  because the overlay uses neither; this keeps the owner small and
+  avoids Activity-only state.
+- Coordinates are relative to the usable window area (display minus
+  system bars), read from `WindowManager.currentWindowMetrics` on API
+  30+ and `defaultDisplay` below it. Placement offsets are applied
+  directly with `Gravity.TOP or Gravity.START`.
+- Drag uses screen coordinates from `getLocationOnScreen` instead of
+  Compose-local deltas. Moving the window under the finger would
+  otherwise cancel the local deltas and stall the drag.
+- On release the window snaps to the nearest horizontal edge; the edge
+  and the clamped vertical fraction are persisted atomically through
+  `SettingsRepository.setHandlePosition`. The panel opens toward the
+  screen interior, and its vertical centre follows the handle so the
+  handle does not jump when the panel opens.
+- The window is removed synchronously in `onDestroy`; the permission is
+  re-checked on resume and immediately before `addView`.
+- Deferred beyond M2 acceptance: outside-tap collapse, screen-off
+  collapse, boot restore (no boot receiver) and permission-loss
+  detection while the app is backgrounded. These are tracked in
+  `docs/ROADMAP.md`.
 
 ## 6. Service Lifecycle
 
@@ -189,14 +206,16 @@ foreground service, which means the overlay only lives as long as the app
 process does, and the product must present that limitation honestly.
 This fallback is not implemented or promised now.
 
-### 6.3 Proposed behavior
+### 6.3 Implemented behavior (M2)
 
 - `OverlayService` is a foreground service with type `specialUse`,
   declared with `FOREGROUND_SERVICE_SPECIAL_USE`, `FOREGROUND_SERVICE`,
   the `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` manifest property, and a
   user-visible notification.
 - `POST_NOTIFICATIONS` is requested on API 33+; denial is tolerated
-  (the notification is invisible but the service still runs).
+  (the notification is invisible but the service still runs). The app
+  shows a caveat on the main screen while the overlay is on and
+  notifications are denied.
 - `startForeground` is called immediately in `onStartCommand` to satisfy
   the five-second requirement.
 - `START_NOT_STICKY` is used: restarting the overlay without a visible
@@ -207,10 +226,15 @@ This fallback is not implemented or promised now.
   visible overlay window. Therefore the service is started only from a
   user gesture (app button or an existing visible overlay), never from
   a boot receiver.
-- Monitoring polling runs only while the panel is expanded and the
-  screen is on. Collapsing the panel, screen off, or permission loss
-  stops sampling. The service itself continues to exist only while the
-  overlay is enabled by the user.
+- The saved `overlayEnabled` setting is restored on app resume when the
+  permission is still granted. `OverlayService.isRunning` is an
+  in-process flag used to avoid redundant restarts; it is not persisted.
+- If the permission is revoked, or the window cannot be added, the
+  service clears `overlayEnabled` and stops rather than retrying.
+- Monitoring polling does not exist yet. From M3 it must run only while
+  the panel is expanded and the screen is on. Collapsing the panel,
+  screen off, or permission loss stops sampling. The service itself
+  continues to exist only while the overlay is enabled by the user.
 
 ## 7. Monitoring Providers
 

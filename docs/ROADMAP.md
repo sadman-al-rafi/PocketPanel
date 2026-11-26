@@ -195,7 +195,7 @@ blocked by the suspended device-testing policy (D016)
 ---
 
 ## M2 — Floating Overlay Foundation
-Status: [ ] Not started
+Status: [~] Implemented 2026-11-26; CI build and device verification pending
 
 ### Objectives
 - Implement overlay permission handling.
@@ -204,15 +204,60 @@ Status: [ ] Not started
 - Implement drag positioning.
 - Implement overlay lifecycle handling.
 
+### Deliverables
+- `overlay/OverlayPermission.kt`: `canDrawOverlays` check and settings
+  intent with a graceful failure path.
+- `overlay/OverlayService.kt`: `specialUse` foreground service,
+  `START_NOT_STICKY`, notification with a Stop action, settings
+  collection, explicit stop on permission or window failure.
+- `overlay/OverlayWindowController.kt`: single
+  `TYPE_APPLICATION_OVERLAY` window, usable-area placement, drag and
+  snap, synchronous removal.
+- `overlay/OverlayContent.kt`: handle and panel Compose UI, fixed dp
+  sizes, screen-coordinate drag gesture, accessibility semantics.
+- `overlay/OverlayLifecycleOwner.kt`: service-scoped lifecycle for the
+  overlay `ComposeView`.
+- `overlay/OverlayGeometry.kt`: pure placement and snap math.
+- `settings/HandleEdge.kt` and DataStore keys for `overlayEnabled`,
+  edge and vertical fraction; `setHandlePosition` writes both atomically.
+- Main screen overlay card, permission button and notification caveat;
+  manifest permissions and service declaration.
+- JVM tests `OverlayGeometryTest` and `HandleEdgeTest`.
+
 ### Acceptance Criteria
-- [ ] Overlay permission is handled correctly.
-- [ ] Floating handle appears when enabled.
-- [ ] Panel opens and closes.
-- [ ] Handle positioning works.
-- [ ] Permission denial is handled.
-- [ ] Overlay survives expected lifecycle transitions.
-- [ ] No unacceptable resource consumption.
-- [ ] Build and tests pass.
+- [~] Overlay permission is handled correctly. Implemented; needs
+      device verification of grant, denial and revocation.
+- [~] Floating handle appears when enabled. Implemented; needs device
+      verification.
+- [~] Panel opens and closes. Implemented via handle tap and Hide
+      button; needs device verification.
+- [~] Handle positioning works. Implemented with screen-coordinate
+      drag, edge snap and persistence; geometry covered by JVM tests.
+      Needs device verification.
+- [~] Permission denial is handled. Implemented; needs device
+      verification.
+- [~] Overlay survives expected lifecycle transitions. Implemented for
+      rotation and process death (restored on app resume); no boot
+      restore by design. Needs device verification.
+- [ ] No unacceptable resource consumption. Not measured; device
+      testing is suspended (D016).
+- [ ] Build and tests pass. Not yet run for M2; requires an authorized
+      CI run.
+
+### Verification Performed
+- `scripts/check-static.sh`: 75 checks passed locally (structure,
+  resources, manifest wiring, workflow policy).
+- JVM overlay geometry and handle-edge tests are written but not run
+  locally; no JDK is available.
+- No build, lint, unit-test or device result exists for M2 yet.
+
+### Deferred Beyond M2 Acceptance
+- Outside-tap collapse (a non-focusable overlay cannot receive outside
+  touches).
+- Screen-off collapse.
+- Boot restore (no boot receiver by design, D008/D018).
+- Permission-loss detection while the app is backgrounded.
+- Expanded-panel sizing on unusually small displays.
 
 ---
 
@@ -380,19 +425,26 @@ Status: [ ] Not started
 ---
 
 ## Current Milestone
+M2 — Floating Overlay Foundation
+
+Status: implemented 2026-11-26; build and device verification pending.
+`scripts/check-static.sh` passes 75 checks. No M2 build, lint, unit-test
+or device result exists yet.
+
 M1 — Application Foundation and Material You
 
 Status: implementation and build verified by authorized run 45669463189
 (commit `ba95fb4`): build, lint (0 errors) and 5/5 JVM tests pass, APK
 produced. M1 stays `[~]` because runtime behavior (launch, theme switch,
 persistence, dynamic color) has not been observed on a device, and
-device testing is suspended (D016). Two post-run lint fixes are also
-awaiting the next authorized run.
+device testing is suspended (D016). Two post-run lint fixes were applied
+in commit `53dd8d3` and are awaiting the next authorized run.
 
 M0a (research and documentation) is complete. M0b build verification is
 complete on the GitHub Actions x86_64 runner; its launch smoke test is
 deferred and remains unsatisfied because emulator testing is suspended
 (D016).
 
-Do not start M2 or later without explicit authorization, and do not run
-CI without explicit authorization for that run.
+Do not start M3 or later without explicit authorization, and do not run
+CI without explicit authorization for that run. Pushing commits does
+not require permission because the workflow is manual-only.

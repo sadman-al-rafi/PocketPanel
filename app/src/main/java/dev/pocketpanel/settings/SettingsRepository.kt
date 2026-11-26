@@ -14,4 +14,9 @@ interface SettingsRepository {
     suspend fun setThemeMode(mode: ThemeMode)
 
     suspend fun setDynamicColor(enabled: Boolean)
+
+    suspend fun setOverlayEnabled(enabled: Boolean)
+
+    /** Persists the resting edge and vertical position of the handle atomically. */
+    suspend fun setHandlePosition(edge: HandleEdge, verticalFraction: Float)
 }

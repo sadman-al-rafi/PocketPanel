@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import java.io.IOException
@@ -35,9 +36,14 @@ class DataStoreSettingsRepository(
             }
         }
         .map { stored ->
+            val defaults = UserPreferences()
             UserPreferences(
                 themeMode = ThemeMode.fromStorage(stored[Keys.THEME_MODE]),
-                dynamicColor = stored[Keys.DYNAMIC_COLOR] ?: UserPreferences().dynamicColor,
+                dynamicColor = stored[Keys.DYNAMIC_COLOR] ?: defaults.dynamicColor,
+                overlayEnabled = stored[Keys.OVERLAY_ENABLED] ?: defaults.overlayEnabled,
+                handleEdge = HandleEdge.fromStorage(stored[Keys.HANDLE_EDGE]),
+                handleVerticalFraction = (stored[Keys.HANDLE_VERTICAL_FRACTION]
+                    ?: defaults.handleVerticalFraction).coerceIn(0f, 1f),
             )
         }
 
@@ -49,9 +55,23 @@ class DataStoreSettingsRepository(
         dataStore.edit { stored -> stored[Keys.DYNAMIC_COLOR] = enabled }
     }
 
+    override suspend fun setOverlayEnabled(enabled: Boolean) {
+        dataStore.edit { stored -> stored[Keys.OVERLAY_ENABLED] = enabled }
+    }
+
+    override suspend fun setHandlePosition(edge: HandleEdge, verticalFraction: Float) {
+        dataStore.edit { stored ->
+            stored[Keys.HANDLE_EDGE] = edge.name
+            stored[Keys.HANDLE_VERTICAL_FRACTION] = verticalFraction.coerceIn(0f, 1f)
+        }
+    }
+
     private object Keys {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        val OVERLAY_ENABLED = booleanPreferencesKey("overlay_enabled")
+        val HANDLE_EDGE = stringPreferencesKey("handle_edge")
+        val HANDLE_VERTICAL_FRACTION = floatPreferencesKey("handle_vertical_fraction")
     }
 
     private companion object {
