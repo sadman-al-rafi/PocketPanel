@@ -131,10 +131,10 @@ Implemented design (M2):
 - The panel is rendered with a `ComposeView` wrapped in a
   `ContextThemeWrapper` so the Material 3 theme resolves. An overlay
   window is not Activity-backed, so the service attaches
-  `ViewTreeLifecycleOwner` itself using a service-scoped
-  `OverlayLifecycleOwner`. Saved-state and ViewModel owners are omitted
-  because the overlay uses neither; this keeps the owner small and
-  avoids Activity-only state.
+  `ViewTreeLifecycleOwner` and `ViewTreeSavedStateRegistryOwner` itself
+  using a service-scoped `OverlayLifecycleOwner`. Compose requires the
+  saved-state owner even though the overlay restores nothing. View-model
+  storage is omitted because it is optional and unused.
 - Coordinates are relative to the usable window area (display minus
   system bars), read from `WindowManager.currentWindowMetrics` on API
   30+ and `defaultDisplay` below it. Placement offsets are applied

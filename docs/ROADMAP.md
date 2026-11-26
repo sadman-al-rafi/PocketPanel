@@ -196,8 +196,8 @@ blocked by the suspended device-testing policy (D016)
 
 ## M2 — Floating Overlay Foundation
 Status: [~] Implemented 2026-11-26 (commit `ee0bffd`); two CI compile
-failures fixed (removed Lifecycle API, JVM signature clash), awaiting
-re-run
+failures fixed (removed Lifecycle API, JVM signature clash) and the
+Compose-required saved-state owner added (D019), awaiting re-run
 
 ### Objectives
 - Implement overlay permission handling.
@@ -217,8 +217,8 @@ re-run
   snap, synchronous removal.
 - `overlay/OverlayContent.kt`: handle and panel Compose UI, fixed dp
   sizes, screen-coordinate drag gesture, accessibility semantics.
-- `overlay/OverlayLifecycleOwner.kt`: service-scoped lifecycle for the
-  overlay `ComposeView`.
+- `overlay/OverlayLifecycleOwner.kt`: service-scoped lifecycle and
+  saved-state owners for the overlay `ComposeView`.
 - `overlay/OverlayGeometry.kt`: pure placement and snap math.
 - `settings/HandleEdge.kt` and DataStore keys for `overlayEnabled`,
   edge and vertical fraction; `setHandlePosition` writes both atomically.
@@ -261,6 +261,11 @@ re-run
   `private var expanded` generates `setExpanded(Z)V`, which collided
   with `private fun setExpanded(Boolean)`. The function is now
   `applyExpanded`.
+- Static review of the Compose 1.13 source found that `ComposeView`
+  throws when no `ViewTreeSavedStateRegistryOwner` is present, even
+  when nothing is restored. `OverlayLifecycleOwner` now provides both
+  owners and `androidx.savedstate:savedstate:1.5.0` is declared
+  explicitly (D019). This has not been compiled yet.
 - No successful M2 build, lint, unit-test or device result exists yet.
 
 ### Deferred Beyond M2 Acceptance

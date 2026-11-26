@@ -695,11 +695,10 @@ Decision:
   (`48 dp` handle plus a `272 x 176 dp` panel). One window means one
   `LayoutParams`, no inter-window positioning, and a single
   add/update/remove path. The panel opens toward the screen interior.
-- Host the content in a `ComposeView` with only a service-scoped
-  `LifecycleOwner`. Saved-state and ViewModel owners are omitted
-  because the overlay has no saved state and no ViewModels. This is
-  smaller than a generic multi-owner wrapper and cannot leak an
-  Activity.
+- Host the content in a `ComposeView` with a service-scoped
+  `OverlayLifecycleOwner` that implements both `LifecycleOwner` and
+  `SavedStateRegistryOwner`. View-model storage is omitted because it
+  is optional and unused. The owner cannot leak an Activity.
 - Compute placement against the usable window area (display minus
   system bars) and apply offsets directly with
   `Gravity.TOP or Gravity.START`. No manual inset addition is needed
@@ -722,7 +721,8 @@ Alternatives considered:
   window lifecycle and requires keeping two positions in sync.
 - Full `SavedStateRegistryOwner` and `ViewModelStoreOwner` in the
   overlay: rejected; neither feature is used, and the extra surface
-  would need its own tests.
+  would need its own tests. Superseded for the saved-state half by
+  D019: Compose requires the owner even when nothing is restored.
 - Local drag deltas: rejected after reasoning about window movement
   feedback.
 - Sticky service or boot receiver: rejected; contradicts D008 and the
@@ -754,3 +754,47 @@ clash because the private `expanded` state property generates a
 `setExpanded(Z)V` setter, which collided with the private
 `setExpanded(Boolean)` helper. The helper is now `applyExpanded`;
 behavior and state names are unchanged.
+
+### D019 — Overlay Saved-State Owner and Savedstate Dependency
+
+Date: 2026-11-26
+Status: Accepted.
+
+Context: D018 originally omitted the saved-state owner because the
+overlay restores nothing. Reviewing the Compose 1.13 `ComposeView`
+source showed that `resolveComposeViewContext()` throws
+`Composed into the View which doesn't propagate
+ViewTreeSavedStateRegistryOwner!` when the owner is missing. The
+ViewModelStoreOwner remains optional. CI cannot catch this because it
+is a runtime requirement.
+
+Decision:
+- `OverlayLifecycleOwner` implements `SavedStateRegistryOwner` in
+  addition to `LifecycleOwner`. It creates a
+  `SavedStateRegistryController`, calls `performAttach()` and
+  `performRestore(null)` once, and exposes the empty registry. It never
+  calls `performSave`, because the overlay has no state to persist.
+- The `ComposeView` receives both owners through
+  `setViewTreeLifecycleOwner` and
+  `setViewTreeSavedStateRegistryOwner`.
+- Declare `androidx.savedstate:savedstate:1.5.0` explicitly instead of
+  relying on the transitive copy from `savedstate-compose`. This is the
+  stable version already resolved by the Compose dependency graph, and
+  it exposes the required API.
+- Keep the ViewModelStoreOwner unset: Compose treats it as optional and
+  the overlay has no ViewModels.
+
+Alternatives considered:
+- Omitting the saved-state owner: rejected; it would crash on the first
+  composition.
+- A second owner object: rejected; `SavedStateRegistryOwner` already
+  extends `LifecycleOwner`, so one object is sufficient.
+- Implementing save/restore: rejected; the overlay has nothing to
+  persist beyond the settings that DataStore already owns.
+
+Consequences:
+- One new direct dependency (savedstate 1.5.0), already present
+  transitively at the same version, so the dependency graph changes
+  only in declaration.
+- The owner remains service-scoped and cannot leak an Activity.
+- Runtime overlay behavior still needs device testing (D016).

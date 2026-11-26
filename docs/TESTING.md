@@ -109,8 +109,14 @@ Current status (2026-11-26):
   failed at `assembleDebug` with a JVM signature clash: the private
   `expanded` property generates `setExpanded(Z)V`, which collided with
   `private fun setExpanded(Boolean)`. The function was renamed to
-  `applyExpanded`. Lint, unit tests and the APK did not run. A new
-  authorized run is required.
+  `applyExpanded`. Lint, unit tests and the APK did not run.
+- Static review of the Compose 1.13 source found that `ComposeView`
+  throws when no `ViewTreeSavedStateRegistryOwner` is present, even
+  though the overlay restores nothing. `OverlayLifecycleOwner` now
+  implements `SavedStateRegistryOwner` and attaches an empty registry;
+  `androidx.savedstate:savedstate:1.5.0` is now declared explicitly
+  (D019). This fix has not been compiled yet. A new authorized run is
+  required.
 
 ## 4. Configuration Verification
 
@@ -127,8 +133,8 @@ Current status (2026-11-26):
 - Dependency versions come from the version catalog only.
 - M1/M2 dependencies: DataStore Preferences 1.3.0,
   lifecycle-runtime-compose and lifecycle-viewmodel-compose 2.11.1,
-  JUnit 4.13.2, androidx.test ext-junit 1.3.0 and runner 1.7.0 (D014).
-  M2 adds no new dependency.
+  savedstate 1.5.0, JUnit 4.13.2, androidx.test ext-junit 1.3.0 and
+  runner 1.7.0 (D014, D019).
 
 ## 5. Application Verification
 
@@ -165,7 +171,10 @@ rendering is not possible without a device and remains unverified.
 
 Each case must be tested on a real device or an emulator with the
 overlay permission state controlled manually. M2 implementation status
-is noted per case; none of these cases has been executed yet.
+is noted per case; none of these cases has been executed yet. The first
+composition also exercises the service-provided lifecycle and
+saved-state owners (D019); a missing saved-state owner would throw
+before the handle renders.
 
 | Case | Expected | M2 status |
 |---|---|---|

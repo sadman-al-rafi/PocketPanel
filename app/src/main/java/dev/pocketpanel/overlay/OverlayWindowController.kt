@@ -15,8 +15,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.ComposeView
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.SavedStateRegistryOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import dev.pocketpanel.R
 import dev.pocketpanel.settings.HandleEdge
 import dev.pocketpanel.settings.UserPreferences
@@ -37,7 +38,7 @@ import kotlin.math.roundToInt
  */
 class OverlayWindowController(
     context: Context,
-    lifecycleOwner: LifecycleOwner,
+    lifecycleOwner: SavedStateRegistryOwner,
     private val onPositionChanged: (HandleEdge, Float) -> Unit,
 ) {
 
@@ -47,9 +48,10 @@ class OverlayWindowController(
         ContextThemeWrapper(appContext, R.style.Theme_PocketPanel),
     ).apply {
         // An overlay window has no Activity, so the service supplies the
-        // lifecycle that Compose needs. Saved state and view models are not
-        // used by the overlay.
+        // lifecycle and saved-state owners that Compose requires. The
+        // overlay does not use view models.
         setViewTreeLifecycleOwner(lifecycleOwner)
+        setViewTreeSavedStateRegistryOwner(lifecycleOwner)
         setContent {
             val currentPreferences = preferences
             val currentExpanded = expanded
