@@ -46,13 +46,14 @@ data class DeviceInfo(
             val im = context.getSystemService(android.content.Context.BATTERY_SERVICE) as? BatteryManager
 
             val level = if (im != null) {
-                // isLevelKnown was removed in newer Android versions;
-                // try reading capacity directly and fall back to null.
-                val cap = im.getInt(BatteryManager.BATTERY_PROPERTY_CAPACITY).coerceIn(0, 100)
+                // Read battery capacity directly; property keys are strings,
+                // which are more reliably available across API levels than
+                // the BatteryProperty enum.
+                val cap = im.getInt("capacity").coerceIn(0, 100)
                 cap
             } else null
-            val status = if (im != null) im.getInt(BatteryManager.BATTERY_PROPERTY_STATUS) else null
-            val health = if (im != null) im.getInt(BatteryManager.BATTERY_PROPERTY_HEALTH) else null
+            val status = if (im != null) im.getInt("status") else null
+            val health = if (im != null) im.getInt("health") else null
             val plugged = if (im != null) im.isCharging else null
 
             val batteryLevel = level.coerceIn(0, 100)

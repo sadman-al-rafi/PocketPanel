@@ -142,6 +142,7 @@ Current status (2026-11-26):
   started 2026-11-26; adds system monitoring (CPU, RAM, battery) with
   configurable intervals. A compile-fix has been pushed; a new
   authorized CI run is required.
+- **Run 45770401046 (run 15, commit `2a900ea`) then failed** at `assembleDebug` with `Unresolved reference 'isLevelKnown' on receiver of type 'BatteryManager'. The `isLevelKnown` property was removed in newer Android versions; the battery capacity is now read directly with a null fallback. A new authorized run is required after this fix.
 
 ## 4. Configuration Verification
 
