@@ -144,6 +144,7 @@ Current status (2026-11-26):
   authorized CI run is required.
 - **Run 45770401046 (run 15, commit `2a900ea`) then failed** at `assembleDebug` with `Unresolved reference 'isLevelKnown' on receiver of type 'BatteryManager'. The `isLevelKnown` property was removed in newer Android versions; the battery capacity is now read directly with a null fallback. A new authorized run is required after this fix.
 
+- **Run 45771495631 (run 16, commit `d124481`) then failed** at `assembleDebug` with `Unresolved reference 'getInt' on receiver of type 'BatteryManager'. The `getInt` method usage with enum constants was replaced with string-based property keys (`"capacity"`, `"status"`, `"health"`); a new authorized run is required after this fix.
 ## 4. Configuration Verification
 
 - `compileSdk 37.1` (API 37 with `minorApiLevel = 1`), `targetSdk 36`,
