@@ -8,10 +8,17 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import dev.pocketpanel.settings.SettingsRepository
 import dev.pocketpanel.settings.ThemeMode
 import dev.pocketpanel.settings.UserPreferences
+import dev.pocketpanel.system.DeviceInfo
+import dev.pocketpanel.system.SystemInfoRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -24,22 +31,53 @@ sealed interface AppScreen {
 data class PocketPanelUiState(
     val preferences: UserPreferences = UserPreferences(),
     val screen: AppScreen = AppScreen.Main,
+    /** Latest monitoring sample, or null when monitoring is off or not ready. */
+    val deviceInfo: DeviceInfo? = null,
 )
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class PocketPanelViewModel(
     private val settingsRepository: SettingsRepository,
+    private val systemInfoRepository: SystemInfoRepository,
 ) : ViewModel() {
 
     private val screen = MutableStateFlow<AppScreen>(AppScreen.Main)
 
+    /**
+     * Polling only runs while the UI observes the state. Changing the
+     * interval or stopping monitoring restarts the sampling flow.
+     */
+    private val deviceInfo: StateFlow<DeviceInfo?> = settingsRepository.preferences
+        .map { preferences ->
+            preferences.monitoringEnabled to preferences.monitoringIntervalSeconds
+        }
+        .distinctUntilChanged()
+        .flatMapLatest { (enabled, intervalSeconds) ->
+            if (enabled) {
+                systemInfoRepository.deviceInfoFlow(intervalSeconds * 1_000L)
+            } else {
+                flowOf(null)
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+            initialValue = null,
+        )
+
     val uiState: StateFlow<PocketPanelUiState> = combine(
         settingsRepository.preferences,
         screen,
-    ) { preferences, currentScreen ->
-        PocketPanelUiState(preferences = preferences, screen = currentScreen)
+        deviceInfo,
+    ) { preferences, currentScreen, info ->
+        PocketPanelUiState(
+            preferences = preferences,
+            screen = currentScreen,
+            deviceInfo = info,
+        )
     }.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
+        started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
         initialValue = PocketPanelUiState(),
     )
 
@@ -59,10 +97,24 @@ class PocketPanelViewModel(
         viewModelScope.launch { settingsRepository.setDynamicColor(enabled) }
     }
 
+    fun setMonitoringEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setMonitoringEnabled(enabled) }
+    }
+
+    fun setMonitoringIntervalSeconds(seconds: Int) {
+        viewModelScope.launch { settingsRepository.setMonitoringIntervalSeconds(seconds) }
+    }
+
     companion object {
-        fun factory(settingsRepository: SettingsRepository): ViewModelProvider.Factory =
-            viewModelFactory {
-                initializer { PocketPanelViewModel(settingsRepository) }
+        private const val STOP_TIMEOUT_MILLIS = 5_000L
+
+        fun factory(
+            settingsRepository: SettingsRepository,
+            systemInfoRepository: SystemInfoRepository,
+        ): ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                PocketPanelViewModel(settingsRepository, systemInfoRepository)
             }
+        }
     }
 }

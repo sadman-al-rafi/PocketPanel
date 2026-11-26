@@ -98,55 +98,62 @@ Current status (2026-11-26):
   color) remains unverified because no device or emulator test is
   authorized (D016).
 - M2: authorized manual run 45753602748 (run 11, commit `ef88643`)
-  failed at `assembleDebug`. The only compiler error was
+  failed at `assembleDebug` with
   `Unresolved reference 'ViewTreeLifecycleOwner'` in
-  `OverlayWindowController.kt`: Lifecycle 2.11.1 no longer exposes that
-  class, and the supported API is the `View.setViewTreeLifecycleOwner`
-  extension. The code now uses the extension and explicit non-null
-  `getSystemService` results. Lint, unit tests and the APK did not run
-  in that attempt.
+  `OverlayWindowController.kt`. Lifecycle 2.11.1 no longer exposes that
+  class; the supported API is the `View.setViewTreeLifecycleOwner`
+  extension. Lint, unit tests and the APK did not run.
 - M2: authorized manual run 45754823414 (run 12, commit `5ec59d8`)
   failed at `assembleDebug` with a JVM signature clash: the private
-  `expanded` property generates `setExpanded(Z)V`, which collided with
+  `expanded` property generated `setExpanded(Z)V`, which collided with
   `private fun setExpanded(Boolean)`. The function was renamed to
   `applyExpanded`. Lint, unit tests and the APK did not run.
 - Static review of the Compose 1.13 source found that `ComposeView`
   throws when no `ViewTreeSavedStateRegistryOwner` is present, even
   though the overlay restores nothing. `OverlayLifecycleOwner` now
   implements `SavedStateRegistryOwner` and attaches an empty registry;
-  `androidx.savedstate:savedstate:1.5.0` is now declared explicitly
-  (D019). This fix has not been compiled yet.
-- **M2: authorized manual run 45754823414 (run 12, commit `5ec59d8`)
-  failed at `assembleDebug` with a JVM signature clash: the private
-  `expanded` property generates `setExpanded(Z)V`, which collided with
-  `private fun setExpanded(Boolean)`. The function was renamed to
-  `applyExpanded`. Lint, unit tests and the APK did not run.
-- Static review of the Compose 1.13 source found that `ComposeView`
-  throws when no `ViewTreeSavedStateRegistryOwner` is present, even
-  though the overlay restores nothing. `OverlayLifecycleOwner` now
-  implements `SavedStateRegistryOwner` and attaches an empty registry;
-  `androidx.savedstate:savedstate:1.5.0` is now declared explicitly
-  (D019). This fix has not been compiled yet.
+  `androidx.savedstate:savedstate:1.5.0` is declared explicitly (D019).
 - **Run 45756276354 (run 13, commit `c254da9`) succeeded**: build
   successful, lint 0 errors/5 warnings, 5/5 JVM tests passed, APK
-  13,961,294 bytes, sha256 `49d058a479459b6507e3477e5f54fcc6bc70bae248100bd574c23fd769ec4838`. M2 acceptance criteria are
-  satisfied from a compilation/lint/test perspective. Runtime overlay
-  behavior remains unverified because no device or emulator test is
-  authorized (D016).
-- **Run 45770033796 (run 14, commit `2a900ea`) failed** at
-  `assembleDebug` with `Unresolved reference 'Context'` in
-  `DeviceInfo.kt:43`. The `load(Context)` function's parameter type
-  `Context` was missing its import. The import has been added and a
-  new authorized run is required.
-- **M3: CI authorized run pending on commit `2a900ea`**. Development
-  started 2026-11-26; adds system monitoring (CPU, RAM, battery) with
-  configurable intervals. A compile-fix has been pushed; a new
-  authorized CI run is required.
-- **Run 45770401046 (run 15, commit `2a900ea`) then failed** at `assembleDebug` with `Unresolved reference 'isLevelKnown' on receiver of type 'BatteryManager'. The `isLevelKnown` property was removed in newer Android versions; the battery capacity is now read directly with a null fallback. A new authorized run is required after this fix.
+  13,961,294 bytes, sha256
+  `49d058a479459b6507e3477e5f54fcc6bc70bae248100bd574c23fd769ec4838`.
+  M2 acceptance criteria are satisfied from a compilation/lint/test
+  perspective. Runtime overlay behavior remains unverified because no
+  device or emulator test is authorized (D016).
+- **M3: six authorized runs (14-19) all failed at `assembleDebug`.**
+  - Run 45770033796 (run 14) failed with
+    `Unresolved reference 'Context'` in `DeviceInfo.kt`. The status
+    file recorded commit `bd9abdd`; the import fix was pushed as
+    `2a900ea`.
+  - Run 45770401046 (run 15, commit `2a900ea`) failed with
+    `Unresolved reference 'isLevelKnown'` on `BatteryManager`.
+  - Run 45771495631 (run 16, commit `d124481`) failed with
+    `Unresolved reference 'getInt'` on `BatteryManager`.
+  - Run 45771970812 (run 17, commit `609cfe6`) failed with the same
+    `getInt` error.
+  - Run 45772367516 (run 18, commit `609cfe6`) failed with
+    `Unresolved reference 'memoize'`.
+  - Run 45822071489 (run 19, commit `609cfe6`, finished
+    2026-11-26T12:42:32Z) failed with the same `memoize` error.
+  - Root cause found during this session: the M3 source files were
+    invalid placeholder code, not a toolchain incompatibility. They
+    contained an invented `androidx.compose.runtime.memoize` import,
+    invented `androidx.compose.ui.*` imports, `kotlin.run(?)`,
+    `Arrangement.space(...)`, reassignment of a `val` parameter, a
+    `StringBuilder` helper that emitted XML, and a reference to a
+    non-existent `com.github.lin7xv.library.cpuinfo` library. Fixing
+    one reported error only exposed the next one.
+- **M3/M4 rewrite (not yet compiled)**: the system package was rewritten
+  using documented framework APIs only: `ActivityManager.MemoryInfo`
+  for memory, the sticky `ACTION_BATTERY_CHANGED` broadcast for
+  level/temperature/health, and `/proc/stat` deltas for best-effort CPU
+  usage. Monitoring state and interval are persisted in DataStore.
+  Unsupported values remain null and are rendered as "Not available".
+  No new dependencies were added. `./scripts/check-static.sh` passes
+  75/75. Compilation, lint, unit tests and the APK have NOT been
+  verified; a new authorized CI run is required.
 
-- **Run 45771495631 (run 16, commit `d124481`) then failed** at `assembleDebug` with `Unresolved reference 'getInt' on receiver of type 'BatteryManager'. The `getInt` method usage with enum constants was replaced with string-based property keys (`"capacity"`, `"status"`, `"health"`); a new authorized run is required after this fix.
 ## 4. Configuration Verification
-
 - `compileSdk 37.1` (API 37 with `minorApiLevel = 1`), `targetSdk 36`,
   `minSdk 26` in the app module.
 - JDK 17 toolchain, `jvmTarget = 17`.
@@ -162,8 +169,9 @@ Current status (2026-11-26):
   lifecycle-runtime-compose and lifecycle-viewmodel-compose 2.11.1,
   savedstate 1.5.0, JUnit 4.13.2, androidx.test ext-junit 1.3.0 and
   runner 1.7.0 (D014, D019).
-- M3 additions: system 1.0.0 (custom DeviceInfo + Runtime), runtime-
-  compose (for MonitoringScreen), no new external dependencies.
+- M3/M4 add no new dependencies. They use framework APIs
+  (`ActivityManager`, `BatteryManager`, `/proc/stat`) and the existing
+  Compose, lifecycle and DataStore libraries.
 
 ## 5. Application Verification
 

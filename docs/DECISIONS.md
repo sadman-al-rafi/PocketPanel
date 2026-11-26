@@ -798,3 +798,51 @@ Consequences:
   only in declaration.
 - The owner remains service-scoped and cannot leak an Activity.
 - Runtime overlay behavior still needs device testing (D016).
+
+### D020 — M3 Monitoring Data Sources and Placeholder-Code Removal
+
+Status: Accepted.
+
+Context: M3 was started at commit `bd9abdd`, but the committed source
+files were invalid placeholder code rather than a working
+implementation. They referenced non-existent APIs
+(`androidx.compose.runtime.memoize`, `androidx.compose.ui.*`,
+`com.github.lin7xv.library.cpuinfo`), used `kotlin.run(?)`,
+`Arrangement.space(...)`, reassigned `val` parameters, and contained a
+`StringBuilder` helper that emitted XML. Runs 14-19 therefore failed
+one error at a time; each fix exposed the next error. This had been
+misdiagnosed as a toolchain incompatibility.
+
+Decision:
+- Rewrite the system package using documented Android framework APIs
+  only, with no new dependencies:
+  - memory: `ActivityManager.MemoryInfo` (`totalMem`, `availMem`);
+  - battery level, temperature and health: the sticky
+    `ACTION_BATTERY_CHANGED` broadcast, read with
+    `ContextCompat.registerReceiver(..., RECEIVER_NOT_EXPORTED)`;
+  - CPU count: `Runtime.availableProcessors()`;
+  - CPU usage: best-effort deltas from `/proc/stat`.
+- Treat every unavailable value as null and render "Not available".
+  Never estimate.
+- Sample on `Dispatchers.Default` from `SystemInfoRepository`, and only
+  while `PocketPanelUiState` is observed
+  (`SharingStarted.WhileSubscribed`).
+- Persist monitoring state and interval in DataStore; clamp the
+  interval to 1-10 s on write and on read.
+- Use battery temperature for M4 because it is broadly available and
+  is exposed by the platform. Do not read CPU/SoC thermal sysfs paths;
+  access is not guaranteed.
+
+Alternatives considered:
+- Keep patching the placeholder files one error per CI run: rejected;
+  it does not converge and wastes CI runs.
+- Add a third-party CPU-info library: rejected; unnecessary dependency
+  and unverified coordinates.
+- Use `BatteryManager.getIntProperty` for health: rejected; health is
+  not exposed as a property, only through the sticky broadcast.
+
+Consequences:
+- No new dependencies.
+- CPU usage and CPU/SoC temperature may be unavailable on some devices;
+  the UI states this explicitly.
+- The rewrite is not yet compiled; an authorized CI run is required.

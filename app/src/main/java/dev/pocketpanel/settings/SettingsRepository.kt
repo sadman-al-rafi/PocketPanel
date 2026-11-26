@@ -17,6 +17,11 @@ interface SettingsRepository {
 
     suspend fun setOverlayEnabled(enabled: Boolean)
 
+    suspend fun setMonitoringEnabled(enabled: Boolean)
+
+    /** Persists the sampling interval in seconds, clamped to the supported range. */
+    suspend fun setMonitoringIntervalSeconds(seconds: Int)
+
     /** Persists the resting edge and vertical position of the handle atomically. */
     suspend fun setHandlePosition(edge: HandleEdge, verticalFraction: Float)
 }

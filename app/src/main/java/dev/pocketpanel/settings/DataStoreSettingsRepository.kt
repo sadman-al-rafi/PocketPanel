@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import java.io.IOException
@@ -41,6 +42,14 @@ class DataStoreSettingsRepository(
                 themeMode = ThemeMode.fromStorage(stored[Keys.THEME_MODE]),
                 dynamicColor = stored[Keys.DYNAMIC_COLOR] ?: defaults.dynamicColor,
                 overlayEnabled = stored[Keys.OVERLAY_ENABLED] ?: defaults.overlayEnabled,
+                monitoringEnabled = stored[Keys.MONITORING_ENABLED]
+                    ?: defaults.monitoringEnabled,
+                monitoringIntervalSeconds = (stored[Keys.MONITORING_INTERVAL_SECONDS]
+                    ?: defaults.monitoringIntervalSeconds)
+                    .coerceIn(
+                        UserPreferences.MIN_MONITORING_INTERVAL_SECONDS,
+                        UserPreferences.MAX_MONITORING_INTERVAL_SECONDS,
+                    ),
                 handleEdge = HandleEdge.fromStorage(stored[Keys.HANDLE_EDGE]),
                 handleVerticalFraction = (stored[Keys.HANDLE_VERTICAL_FRACTION]
                     ?: defaults.handleVerticalFraction).coerceIn(0f, 1f),
@@ -59,6 +68,19 @@ class DataStoreSettingsRepository(
         dataStore.edit { stored -> stored[Keys.OVERLAY_ENABLED] = enabled }
     }
 
+    override suspend fun setMonitoringEnabled(enabled: Boolean) {
+        dataStore.edit { stored -> stored[Keys.MONITORING_ENABLED] = enabled }
+    }
+
+    override suspend fun setMonitoringIntervalSeconds(seconds: Int) {
+        dataStore.edit { stored ->
+            stored[Keys.MONITORING_INTERVAL_SECONDS] = seconds.coerceIn(
+                UserPreferences.MIN_MONITORING_INTERVAL_SECONDS,
+                UserPreferences.MAX_MONITORING_INTERVAL_SECONDS,
+            )
+        }
+    }
+
     override suspend fun setHandlePosition(edge: HandleEdge, verticalFraction: Float) {
         dataStore.edit { stored ->
             stored[Keys.HANDLE_EDGE] = edge.name
@@ -70,6 +92,8 @@ class DataStoreSettingsRepository(
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val OVERLAY_ENABLED = booleanPreferencesKey("overlay_enabled")
+        val MONITORING_ENABLED = booleanPreferencesKey("monitoring_enabled")
+        val MONITORING_INTERVAL_SECONDS = intPreferencesKey("monitoring_interval_seconds")
         val HANDLE_EDGE = stringPreferencesKey("handle_edge")
         val HANDLE_VERTICAL_FRACTION = floatPreferencesKey("handle_vertical_fraction")
     }

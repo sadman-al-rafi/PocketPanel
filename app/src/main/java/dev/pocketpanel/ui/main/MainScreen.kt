@@ -1,5 +1,6 @@
 package dev.pocketpanel.ui.main
 
+import android.os.BatteryManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.pocketpanel.R
 import dev.pocketpanel.settings.UserPreferences
+import dev.pocketpanel.system.DeviceInfo
 import dev.pocketpanel.ui.TestTags
 import dev.pocketpanel.ui.labelRes
 import dev.pocketpanel.ui.theme.isDynamicColorAvailable
@@ -45,8 +47,9 @@ fun MainScreen(
     onOverlayEnabledChange: (Boolean) -> Unit,
     onRequestOverlayPermission: () -> Unit,
     onOpenSettings: () -> Unit,
-    isMonitoringEnabled: Boolean = false,
-    onMonitoringToggle: () -> Unit = {},
+    deviceInfo: DeviceInfo? = null,
+    onMonitoringEnabledChange: (Boolean) -> Unit = {},
+    onMonitoringIntervalChange: (Int) -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -94,14 +97,10 @@ fun MainScreen(
                         onOpenSettings = onOpenSettings,
                     )
                     MonitoringCard(
-                        onMonitoringToggle = {
-                            isMonitoringEnabled = !isMonitoringEnabled
-                            if (isMonitoringEnabled) {
-                                onOverlayEnabledChange(true)
-                            } else {
-                                onOverlayEnabledChange(false)
-                            }
-                        },
+                        preferences = preferences,
+                        deviceInfo = deviceInfo,
+                        onMonitoringEnabledChange = onMonitoringEnabledChange,
+                        onMonitoringIntervalChange = onMonitoringIntervalChange,
                     )
                 }
             }
@@ -249,13 +248,15 @@ private fun AppearanceRow(label: String, value: String) {
 
 @Composable
 private fun MonitoringCard(
-    isMonitoringEnabled: Boolean,
-    onMonitoringToggle: () -> Unit,
+    preferences: UserPreferences,
+    deviceInfo: DeviceInfo?,
+    onMonitoringEnabledChange: (Boolean) -> Unit,
+    onMonitoringIntervalChange: (Int) -> Unit,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.space(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = stringResource(R.string.monitoring),
@@ -266,22 +267,145 @@ private fun MonitoringCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(
-                    onClick = onMonitoringToggle,
-                    modifier = Modifier.testTag(TestTags.MONITORING_TOGGLE),
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (isMonitoringEnabled) R.string.monitoring_stop else R.string.monitoring_start,
+                        text = stringResource(R.string.monitoring_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = stringResource(
+                            if (preferences.monitoringEnabled) R.string.on else R.string.off,
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                Spacer(modifier = Modifier.width(12.dp))
+                Switch(
+                    checked = preferences.monitoringEnabled,
+                    onCheckedChange = onMonitoringEnabledChange,
+                    modifier = Modifier.testTag(TestTags.MONITORING_TOGGLE),
+                )
             }
-            Text(
-                text = stringResource(R.string.monitoring_description),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+
+            if (preferences.monitoringEnabled) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                if (deviceInfo == null) {
+                    Text(
+                        text = stringResource(R.string.monitoring_waiting),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    MonitoringReadings(deviceInfo)
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                Text(
+                    text = stringResource(R.string.monitoring_interval),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    MONITORING_INTERVALS.forEach { seconds ->
+                        TextButton(onClick = { onMonitoringIntervalChange(seconds) }) {
+                            Text(
+                                text = stringResource(
+                                    R.string.monitoring_interval_seconds,
+                                    seconds,
+                                ),
+                                color = if (preferences.monitoringIntervalSeconds == seconds) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun MonitoringReadings(deviceInfo: DeviceInfo) {
+    MonitoringReading(
+        label = stringResource(R.string.monitoring_cpu_usage),
+        value = deviceInfo.cpuUsagePercent?.let {
+            stringResource(R.string.monitoring_percent, it)
+        } ?: stringResource(R.string.not_available),
+    )
+    MonitoringReading(
+        label = stringResource(R.string.monitoring_cpu_cores),
+        value = deviceInfo.cpuCount?.toString()
+            ?: stringResource(R.string.not_available),
+    )
+    val availableMemory = deviceInfo.availableMemoryBytes
+    val totalMemory = deviceInfo.totalMemoryBytes
+    MonitoringReading(
+        label = stringResource(R.string.monitoring_memory),
+        value = if (availableMemory != null && totalMemory != null) {
+            stringResource(
+                R.string.monitoring_memory_value,
+                availableMemory / MIB,
+                totalMemory / MIB,
+            )
+        } else {
+            stringResource(R.string.not_available)
+        },
+    )
+    MonitoringReading(
+        label = stringResource(R.string.monitoring_battery_level),
+        value = deviceInfo.batteryLevelPercent?.let {
+            stringResource(R.string.monitoring_percent, it)
+        } ?: stringResource(R.string.not_available),
+    )
+    MonitoringReading(
+        label = stringResource(R.string.monitoring_battery_temperature),
+        value = deviceInfo.batteryTemperatureCelsius?.let {
+            stringResource(R.string.monitoring_temperature, it)
+        } ?: stringResource(R.string.not_available),
+    )
+    MonitoringReading(
+        label = stringResource(R.string.monitoring_charging),
+        value = deviceInfo.isCharging?.let {
+            stringResource(if (it) R.string.yes else R.string.no)
+        } ?: stringResource(R.string.not_available),
+    )
+    MonitoringReading(
+        label = stringResource(R.string.monitoring_battery_health),
+        value = deviceInfo.batteryHealth?.let { batteryHealthLabel(it) }
+            ?: stringResource(R.string.not_available),
+    )
+}
+
+@Composable
+private fun MonitoringReading(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun batteryHealthLabel(health: Int): String = when (health) {
+    BatteryManager.BATTERY_HEALTH_GOOD -> stringResource(R.string.monitoring_health_good)
+    BatteryManager.BATTERY_HEALTH_OVERHEAT -> stringResource(R.string.monitoring_health_overheat)
+    BatteryManager.BATTERY_HEALTH_DEAD -> stringResource(R.string.monitoring_health_dead)
+    BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE ->
+        stringResource(R.string.monitoring_health_over_voltage)
+    BatteryManager.BATTERY_HEALTH_UNSPECIFIED_FAILURE ->
+        stringResource(R.string.monitoring_health_failure)
+    BatteryManager.BATTERY_HEALTH_COLD -> stringResource(R.string.monitoring_health_cold)
+    else -> stringResource(R.string.monitoring_health_unknown)
 }
 
 @Composable
@@ -290,3 +414,7 @@ private fun dynamicColorValue(enabled: Boolean): String = when {
     enabled -> stringResource(R.string.on)
     else -> stringResource(R.string.off)
 }
+
+private val MONITORING_INTERVALS = listOf(1, 2, 5, 10)
+
+private const val MIB = 1024L * 1024L

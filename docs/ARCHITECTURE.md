@@ -231,10 +231,14 @@ This fallback is not implemented or promised now.
   in-process flag used to avoid redundant restarts; it is not persisted.
 - If the permission is revoked, or the window cannot be added, the
   service clears `overlayEnabled` and stops rather than retrying.
-- Monitoring polling does not exist yet. From M3 it must run only while
-  the panel is expanded and the screen is on. Collapsing the panel,
-  screen off, or permission loss stops sampling. The service itself
-  continues to exist only while the overlay is enabled by the user.
+- M3/M4 monitoring is exposed on the main screen, not inside the
+  overlay panel. Sampling runs in `SystemInfoRepository` on
+  `Dispatchers.Default` and is subscribed only while the UI collects
+  `PocketPanelUiState` (`SharingStarted.WhileSubscribed`). It therefore
+  stops when the app is not visible. Overlay-panel sampling remains a
+  later milestone and must additionally stop when the panel is
+  collapsed or the screen is off. The service itself continues to exist
+  only while the overlay is enabled by the user.
 
 ## 7. Monitoring Providers
 
@@ -284,6 +288,10 @@ are used. No `QUERY_ALL_PACKAGES`.
 - Implemented in M1: `theme_mode` (enum name) and `dynamic_color`
   (boolean) in the single `settings` DataStore. Keys are private to
   `DataStoreSettingsRepository`; no screen reads raw preference keys.
+- Implemented in M3: `monitoring_enabled` (boolean) and
+  `monitoring_interval_seconds` (int, clamped to 1-10 s). The interval
+  is clamped again when read, so a corrupt value cannot cause a busy
+  loop.
   Corrupt or unreadable data falls back to defaults.
 - No database is required at this stage. Quick notes are stored as
   DataStore string values until a demonstrated size need justifies

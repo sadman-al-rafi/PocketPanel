@@ -265,8 +265,10 @@ Status: [✓] Implemented 2026-11-26 (commit `c254da9`); M2 authorized manual
   throws when no `ViewTreeSavedStateRegistryOwner` is present, even
   when nothing is restored. `OverlayLifecycleOwner` now provides both
   owners and `androidx.savedstate:savedstate:1.5.0` is declared
-  explicitly (D019). This has not been compiled yet.
-- No successful M2 build, lint, unit-test or device result exists yet.
+  explicitly (D019). Run 13 compiled and verified this.
+- Authorized manual run 45756276354 (run 13, commit `c254da9`)
+  succeeded: build, lint (0 errors), 5/5 JVM tests and the debug APK.
+  Runtime overlay behavior remains unverified (D016).
 
 ### Deferred Beyond M2 Acceptance
 - Outside-tap collapse (a non-focusable overlay cannot receive outside
@@ -279,7 +281,11 @@ Status: [✓] Implemented 2026-11-26 (commit `c254da9`); M2 authorized manual
 ---
 
 ## M3 — Basic System Monitoring
-Status: [~] In Progress 2026-11-26; CI authorized run pending on commit `d124481` (run 16 pending after `getInt` fix).
+Status: [~] In Progress 2026-11-26 (started at commit `bd9abdd`).
+Implementation was rewritten after authorized runs 14-19 failed on
+invalid placeholder code (not a toolchain incompatibility). A new
+authorized CI run is required before this milestone can be marked
+complete.
 
 ### Objectives
 - CPU usage monitoring.
@@ -296,10 +302,25 @@ Status: [~] In Progress 2026-11-26; CI authorized run pending on commit `d124481
 - [ ] No fake production readings.
 - [ ] Build and tests pass.
 
+### Implementation Notes
+- `DeviceInfo` reads memory through `ActivityManager.MemoryInfo`,
+  battery level/temperature/health through the sticky
+  `ACTION_BATTERY_CHANGED` broadcast, and CPU usage through
+  best-effort `/proc/stat` deltas.
+- `SystemInfoRepository` samples on `Dispatchers.Default` only while
+  the UI observes the state.
+- `PocketPanelViewModel` persists monitoring state and interval through
+  `SettingsRepository` (DataStore) and exposes them in
+  `PocketPanelUiState`.
+- Unsupported values remain null and are shown as "Not available".
+- Local static checks pass 75/75. Compilation, lint, unit tests and the
+  APK are not yet verified.
+
 ---
 
 ## M4 — Temperature and Hardware Discovery
-Status: [~] In Progress 2026-11-26; CI authorized run pending on commit `c254da9`.
+Status: [~] In Progress 2026-11-26. Battery temperature is implemented
+through the M3 monitoring pipeline; CI verification is pending.
 
 ### Objectives
 - Discover available thermal information.
@@ -313,6 +334,15 @@ Status: [~] In Progress 2026-11-26; CI authorized run pending on commit `c254da9
 - [ ] Unsupported sources do not crash the app.
 - [ ] No fabricated readings.
 - [ ] Build and tests pass.
+
+### Implementation Notes
+- Battery temperature (`BatteryManager.EXTRA_TEMPERATURE`) is the
+  primary source because it is broadly available across Android
+  devices.
+- A missing or `Integer.MIN_VALUE` reading is shown as "Not
+  available"; no temperature is estimated or fabricated.
+- CPU/SoC thermal-zone sysfs paths are not used: access is not
+  guaranteed and is not an SDK contract.
 
 ---
 

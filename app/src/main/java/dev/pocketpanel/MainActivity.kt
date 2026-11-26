@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.pocketpanel.overlay.OverlayPermission
 import dev.pocketpanel.overlay.OverlayService
 import dev.pocketpanel.settings.SettingsRepository
+import dev.pocketpanel.system.SystemInfoRepository
 import dev.pocketpanel.ui.PocketPanelApp
 import dev.pocketpanel.ui.PocketPanelViewModel
 import dev.pocketpanel.ui.theme.PocketPanelTheme
@@ -35,6 +36,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
     private lateinit var settingsRepository: SettingsRepository
+    private lateinit var systemInfoRepository: SystemInfoRepository
 
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -55,12 +57,16 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         settingsRepository = (application as PocketPanelApplication).settingsRepository
+        systemInfoRepository = SystemInfoRepository(applicationContext)
         overlayPermissionGranted = OverlayPermission.isGranted(this)
         notificationPermissionGranted = areNotificationsGranted()
 
         setContent {
             val viewModel: PocketPanelViewModel = viewModel(
-                factory = PocketPanelViewModel.factory(settingsRepository),
+                factory = PocketPanelViewModel.factory(
+                    settingsRepository = settingsRepository,
+                    systemInfoRepository = systemInfoRepository,
+                ),
             )
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val systemInDarkTheme = isSystemInDarkTheme()
@@ -81,6 +87,8 @@ class MainActivity : ComponentActivity() {
                     onDynamicColorChange = viewModel::setDynamicColor,
                     onOverlayEnabledChange = ::setOverlayEnabled,
                     onRequestOverlayPermission = ::requestOverlayPermission,
+                    onMonitoringEnabledChange = viewModel::setMonitoringEnabled,
+                    onMonitoringIntervalChange = viewModel::setMonitoringIntervalSeconds,
                 )
             }
         }

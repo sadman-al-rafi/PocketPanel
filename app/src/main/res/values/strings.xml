@@ -20,12 +20,14 @@
 
     <string name="main_welcome_title">Welcome to PocketPanel</string>
     <string name="main_welcome_body">System monitoring and quick tools, one gesture away.</string>
-    <string name="main_foundation_note">This build includes the application foundation and the floating handle. System monitoring arrives in a later milestone.</string>
+    <string name="main_foundation_note">This build includes the floating handle and basic system monitoring.</string>
     <string name="current_appearance">Current appearance</string>
     <string name="change_in_settings">Change in settings</string>
 
     <string name="on">On</string>
     <string name="off">Off</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
     <string name="not_available">Not available</string>
 
     <string name="overlay">Floating panel</string>
@@ -36,7 +38,7 @@
     <string name="overlay_notification_denied">Notifications are off, so the service notification is hidden. The floating handle still works.</string>
     <string name="overlay_handle_description">Floating panel handle. Tap to open, drag to move.</string>
     <string name="overlay_panel_title">PocketPanel</string>
-    <string name="overlay_panel_body">Monitoring arrives in a later milestone. Drag the handle to move it.</string>
+    <string name="overlay_panel_body">Drag the handle to move it.</string>
     <string name="overlay_panel_hide">Hide</string>
     <string name="overlay_notification_channel">Floating panel</string>
     <string name="overlay_notification_channel_description">Keeps the floating handle running.</string>
@@ -47,7 +49,25 @@
     <string name="settings_saved_note">Appearance changes apply immediately and are saved on this device.</string>
     <!-- M3 system monitoring -->
     <string name="monitoring">System Monitoring</string>
-    <string name="monitoring_description">Display CPU, RAM, battery and device info as an overlay.</string>
-    <string name="monitoring_start">Start Monitoring</string>
-    <string name="monitoring_stop">Stop Monitoring</string>
+    <string name="monitoring_description">Show CPU, memory, battery and device information.</string>
+    <string name="monitoring_waiting">Waiting for the first sample…</string>
+    <string name="monitoring_cpu_usage">CPU usage</string>
+    <string name="monitoring_cpu_cores">CPU cores</string>
+    <string name="monitoring_memory">Memory</string>
+    <string name="monitoring_memory_value">%1$d MiB available of %2$d MiB</string>
+    <string name="monitoring_battery_level">Battery level</string>
+    <string name="monitoring_battery_temperature">Battery temperature</string>
+    <string name="monitoring_charging">Charging</string>
+    <string name="monitoring_battery_health">Battery health</string>
+    <string name="monitoring_interval">Refresh interval</string>
+    <string name="monitoring_interval_seconds">%1$d s</string>
+    <string name="monitoring_percent">%1$d%%</string>
+    <string name="monitoring_temperature">%1$.1f °C</string>
+    <string name="monitoring_health_unknown">Unknown</string>
+    <string name="monitoring_health_good">Good</string>
+    <string name="monitoring_health_overheat">Overheat</string>
+    <string name="monitoring_health_dead">Dead</string>
+    <string name="monitoring_health_over_voltage">Over voltage</string>
+    <string name="monitoring_health_failure">Failure</string>
+    <string name="monitoring_health_cold">Cold</string>
 </resources>
