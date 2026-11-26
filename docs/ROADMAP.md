@@ -124,8 +124,8 @@ Status: [~] Build verified 2026-11-25; launch smoke test deferred (D016)
 ---
 
 ## M1 — Application Foundation and Material You
-Status: [~] Implementation complete; static checks pass; CI verification
-requires an authorized run (D016)
+Status: [~] Implementation and build verified; runtime verification
+blocked by the suspended device-testing policy (D016)
 
 ### Objectives
 - Establish Material 3 design system.
@@ -148,9 +148,9 @@ requires an authorized run (D016)
 ### Acceptance Criteria
 - [x] App uses Material 3 (`MaterialTheme` with a Material 3 color
       scheme, typography and shapes; no decorative styling).
-- [x] Theme switching is implemented for System / Light / Dark and
+- [~] Theme switching is implemented for System / Light / Dark and
       resolves through `ThemeMode.resolveDarkTheme` (5 JVM unit tests
-      passed in run 45637392750).
+      pass), but the UI behavior has not been observed on a device.
 - [~] Theme selection persists through DataStore; the persistence test
       is written but has not run, so persistence is not yet verified at
       runtime.
@@ -162,27 +162,35 @@ requires an authorized run (D016)
 - [x] Dynamic color is implemented for API 31+ with a coherent blue
       fallback palette below it, and the setting is disabled with an
       explanation when unavailable. Runtime appearance is unverified.
-- [~] Build and JVM tests pass for the current app sources (runs
-      45637392750 and 45646689211: assembleDebug, lint and 5 unit tests
-      succeeded). Instrumented tests are not executed (D016), and the
-      APK hash from those runs predates the launcher-icon change.
+- [x] Build, lint and JVM tests pass: run 45669463189 (commit
+      `ba95fb4`), `assembleDebug` + `lintDebug` (0 errors) +
+      `testDebugUnitTest` (5/5). Instrumented tests are not executed
+      (D016).
 
 ### Verification Performed
-- Static checks: `scripts/check-static.sh`, 47 checks passing
-  (2026-11-25). Structural only; no compiler involved.
-- Build/lint/unit tests: run 45637392750 (commit `cf600de`) and run
-  45646689211 (commit `6a59944`), both successful. App sources changed
-  after those runs (launcher icon, a lint `@ChecksSdkIntAtLeast`
-  annotation, one test import), so a fresh authorized run is required
-  before the APK is called verified.
+- Authorized manual run 45669463189 (2026-11-25, run 10, commit
+  `ba95fb4`): success. APK 13,903,982 bytes, sha256
+  `d29438c6719868a1bc879a650a00dd77970e862bf853b6a16420b254b6b02bb3`.
+  Resolved: AGP 9.5.2, Gradle 9.6.0, JDK 17.0.21, Kotlin 2.4.21,
+  Compose BOM 2026.11.01 / Compose 1.13.0 / Material3 1.5.0.
+- Lint: 0 errors, 5 warnings. Two warnings were fixed afterwards
+  (obsolete `mipmap-anydpi-v26` qualifier, missing data-extraction
+  rules; D017). The remaining three are intentional: Gradle 9.9.2 and
+  AGP 9.5.3 are not adopted without approval, and `targetSdk 36` is the
+  D006 policy.
+- Static checks: `scripts/check-static.sh`, 49 checks passing
+  (2026-11-26). Structural only; no compiler involved.
 - Instrumented tests: written, never executed. No result is claimed.
-- Emulator launch: not attempted further; suspended by D016.
+- Emulator launch: not attempted; suspended by D016.
 
 ### Outstanding
-- One authorized CI run for the final M1 sources (build, lint, unit
-  tests, APK hash).
-- Runtime confirmation of theme switching, persistence and dynamic
-  color, once device testing is reintroduced and authorized.
+- Runtime confirmation of launch, theme switching, persistence and
+  dynamic color. This needs either a physical device (for example
+  installing the CI APK manually) or a reintroduced, authorized device
+  test; M1 cannot be marked `[x]` before that.
+- The post-run warning fixes (D017) are not yet covered by an
+  authorized build; they are resource/manifest-only and will be
+  verified by the next authorized run.
 
 ---
 
@@ -374,11 +382,12 @@ Status: [ ] Not started
 ## Current Milestone
 M1 — Application Foundation and Material You
 
-Status: implementation complete and static checks pass. M1 stays in
-progress until one authorized CI run verifies the final sources (build,
-lint, unit tests, APK) and until runtime behavior is confirmed when
-device testing resumes. No workflow has been triggered for these
-changes (D016).
+Status: implementation and build verified by authorized run 45669463189
+(commit `ba95fb4`): build, lint (0 errors) and 5/5 JVM tests pass, APK
+produced. M1 stays `[~]` because runtime behavior (launch, theme switch,
+persistence, dynamic color) has not been observed on a device, and
+device testing is suspended (D016). Two post-run lint fixes are also
+awaiting the next authorized run.
 
 M0a (research and documentation) is complete. M0b build verification is
 complete on the GitHub Actions x86_64 runner; its launch smoke test is

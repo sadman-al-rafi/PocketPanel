@@ -49,7 +49,8 @@ docs/DECISIONS.md. Platform constraints are recorded in sections below.
           monitoring/                 M3+
           permissions/                M2+
           service/                    M2+
-        res/                         Themes, strings, icons, adaptive launcher icon
+        res/                         Themes, strings, icons, adaptive launcher
+                                     icon, data-extraction rules (D017)
       src/test/                      JVM unit tests
       src/androidTest/               Instrumented tests (written, not executed; D016)
 

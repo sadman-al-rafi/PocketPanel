@@ -72,12 +72,23 @@ reports, lint report, APK size and sha256), and full logs plus the debug
 APK are uploaded as workflow artifacts. Job console logs require GitHub
 authentication and are not used as the sole evidence.
 
-Current status (2026-11-25):
+Current status (2026-11-26):
 - M0b: `assembleDebug` succeeded on `ubuntu-24.04` with AGP 9.5.2,
   Gradle 9.6.0, Temurin JDK 17.0.21 and Kotlin 2.4.21 (runs 45621464769
   and 45621953748).
-- M1 implementation: static checks only so far. No authorized M1 CI run
-  has been performed, so M1 has no verified APK or lint/test result yet.
+- M1: authorized manual run 45669463189 (2026-11-25, commit `ba95fb4`,
+  run 10) succeeded. `assembleDebug`, `lintDebug` (0 errors, 5
+  warnings) and `testDebugUnitTest` (5 tests, 0 failures, 0 ignored)
+  all passed. Debug APK: 13,903,982 bytes, sha256
+  `d29438c6719868a1bc879a650a00dd77970e862bf853b6a16420b254b6b02bb3`.
+- Lint warnings in that run: Gradle 9.9.2 available (pinned 9.6.0),
+  AGP 9.5.3 available (pinned 9.5.2), `targetSdk 36` older than
+  `compileSdk 37.1` (D006 policy), an obsolete `-v26` mipmap qualifier
+  and missing data-extraction rules. The last two were fixed after the
+  run (D017); the first three are intentional.
+- Runtime behavior (launch, theme switching, persistence, dynamic
+  color) remains unverified because no device or emulator test is
+  authorized (D016).
 
 ## 4. Configuration Verification
 

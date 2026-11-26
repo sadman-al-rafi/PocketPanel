@@ -639,3 +639,43 @@ Consequences:
   KVM setup are no longer dependencies of the project.
 - Reintroducing device testing requires a new decision and explicit
   authorization.
+
+### D017 — M1 Lint Follow-ups and Data Extraction Policy
+
+Date: 2026-11-26
+Status: Accepted.
+
+Context: authorized run 45669463189 produced 5 lint warnings and 0
+errors. Two were actionable without touching the approved toolchain.
+
+Decision:
+- App data is excluded from both cloud backup and device-to-device
+  transfer with `res/xml/data_extraction_rules.xml`, referenced by
+  `android:dataExtractionRules` on `<application>`. `allowBackup` stays
+  `false`. The attribute is used on API 31+ and ignored below it, which
+  is valid with `minSdk 26`.
+- The adaptive icon folder is `mipmap-anydpi`, not
+  `mipmap-anydpi-v26`: `minSdk` is already 26, so the qualifier was
+  redundant (lint `ObsoleteSdkInt`).
+- The remaining warnings are accepted deliberately:
+  - Gradle 9.9.2 is available but 9.6.0 is pinned (D011).
+  - AGP 9.5.3 is available but 9.5.2 is the verified version (D005,
+    D013).
+  - `targetSdk 36` is older than `compileSdk 37.1` by policy (D006).
+
+Reason: PocketPanel stores user settings locally and should not leak
+them through backup or device migration. Fixing the two actionable
+warnings keeps lint output meaningful; changing the toolchain or
+`targetSdk` to silence the other three would contradict approved
+decisions.
+
+Verification: the warnings were observed in run 45669463189.
+`scripts/check-static.sh` passes 49 checks after the changes (including
+a new `@xml` reference check). The changes are resource/manifest-only
+and have not yet been compiled; the next authorized run verifies them.
+
+Consequences:
+- Theme and future settings do not migrate to a new device. This is
+  acceptable because appearance is device-specific; it can be revisited
+  if a future feature stores user-authored data.
+- Lint remains at 3 accepted warnings instead of 5.

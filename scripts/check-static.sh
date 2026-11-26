@@ -54,7 +54,8 @@ required_files=(
     "app/src/main/res/values/themes.xml"
     "app/src/main/res/values-night/themes.xml"
     "app/src/main/res/drawable/ic_launcher_foreground.xml"
-    "app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+    "app/src/main/res/mipmap-anydpi/ic_launcher.xml"
+    "app/src/main/res/xml/data_extraction_rules.xml"
     "scripts/check-static.sh"
     ".github/workflows/verify-toolchain.yml"
 )
@@ -145,6 +146,8 @@ declared_styles=$(grep -ho '<style name="[^"]*"' app/src/main/res/values*/themes
     | sed -E 's/.*name="([^"]*)"/\1/' | sort -u)
 declared_colors=$(grep -ho '<color name="[^"]*"' app/src/main/res/values*/colors.xml \
     | sed -E 's/.*name="([^"]*)"/\1/' | sort -u)
+declared_xml=$(find app/src/main/res/xml -type f -name '*.xml' 2>/dev/null \
+    | sed -E 's#.*/##; s/\.xml$//' | sort -u)
 
 verify_refs() {
     local kind=$1 pattern=$2 strip=$3 declared=$4
@@ -165,6 +168,7 @@ verify_refs "mipmap" 'R\.mipmap\.[A-Za-z0-9_]+' 's/^R\.mipmap\.//' "$declared_dr
 verify_refs "mipmap" '@mipmap/[A-Za-z0-9_.]+' 's#^@mipmap/##' "$declared_drawables"
 verify_refs "style" '@style/[A-Za-z0-9_.]+' 's#^@style/##' "$declared_styles"
 verify_refs "color" '@color/[A-Za-z0-9_.]+' 's#^@color/##' "$declared_colors"
+verify_refs "xml" '@xml/[A-Za-z0-9_.]+' 's#^@xml/##' "$declared_xml"
 ok
 
 duplicates=$(grep -ho '<string name="[^"]*"' app/src/main/res/values/strings.xml \
