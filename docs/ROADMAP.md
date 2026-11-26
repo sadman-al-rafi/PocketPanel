@@ -195,7 +195,7 @@ blocked by the suspended device-testing policy (D016)
 ---
 
 ## M2 — Floating Overlay Foundation
-Status: [~] Implemented 2026-11-26; CI build and device verification pending
+Status: [~] Implemented 2026-11-26 (commit `ee0bffd`); CI build and device verification pending
 
 ### Objectives
 - Implement overlay permission handling.

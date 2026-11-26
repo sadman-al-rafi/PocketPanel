@@ -167,7 +167,7 @@ is noted per case; none of these cases has been executed yet.
 | Outside tap while expanded | Panel collapses | Deferred (D018) |
 | Screen off / on | Overlay recovers, no duplicate windows | Deferred (D018) |
 | Rotation and display size change | Handle remains visible and reachable | Implemented, unverified |
-| Device reboot | Overlay stays off until the user enables it | By design (no boot receiver) |
+| Device reboot | Overlay stays off after boot; opening the app restores it from the saved setting | By design (no boot receiver) |
 | Notification permission denied (API 33+) | Service runs, caveat shown in settings | Implemented, unverified |
 | Service notification Stop action | Overlay stops and setting turns off | Implemented, unverified |
 
