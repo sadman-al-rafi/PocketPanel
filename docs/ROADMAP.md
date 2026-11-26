@@ -195,9 +195,9 @@ blocked by the suspended device-testing policy (D016)
 ---
 
 ## M2 — Floating Overlay Foundation
-Status: [~] Implemented 2026-11-26 (commit `ee0bffd`); two CI compile
-failures fixed (removed Lifecycle API, JVM signature clash) and the
-Compose-required saved-state owner added (D019), awaiting re-run
+Status: [✓] Implemented 2026-11-26 (commit `c254da9`); M2 authorized manual
+  run 45756276354 (run 13): build successful (0 lint errors, 5 warnings),
+  5/5 JVM tests passed, APK 13,961,294 bytes, sha256 `49d058a479459b6507e3477e5f54fcc6bc70bae248100bd574c23fd769ec4838`.
 
 ### Objectives
 - Implement overlay permission handling.
@@ -279,7 +279,7 @@ Compose-required saved-state owner added (D019), awaiting re-run
 ---
 
 ## M3 — Basic System Monitoring
-Status: [ ] Not started
+Status: [~] In Progress 2026-11-26; CI authorized run pending on commit `c254da9`.
 
 ### Objectives
 - CPU usage monitoring.
@@ -299,7 +299,7 @@ Status: [ ] Not started
 ---
 
 ## M4 — Temperature and Hardware Discovery
-Status: [ ] Not started
+Status: [~] In Progress 2026-11-26; CI authorized run pending on commit `c254da9`.
 
 ### Objectives
 - Discover available thermal information.

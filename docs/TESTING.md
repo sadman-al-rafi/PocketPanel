@@ -115,8 +115,13 @@ Current status (2026-11-26):
   though the overlay restores nothing. `OverlayLifecycleOwner` now
   implements `SavedStateRegistryOwner` and attaches an empty registry;
   `androidx.savedstate:savedstate:1.5.0` is now declared explicitly
-  (D019). This fix has not been compiled yet. A new authorized run is
-  required.
+  (D019). This fix has not been compiled yet.
+- **Run 45756276354 (run 13, commit `c254da9`) succeeded**: build
+  successful, lint 0 errors/5 warnings, 5/5 JVM tests passed, APK
+  13,961,294 bytes, sha256 `49d058a479459b6507e3477e5f54fcc6bc70bae248100bd574c23fd769ec4838`. M2 acceptance criteria are
+  satisfied from a compilation/lint/test perspective. Runtime overlay
+  behavior remains unverified because no device or emulator test is
+  authorized (D016).
 
 ## 4. Configuration Verification
 

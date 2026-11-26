@@ -45,6 +45,8 @@ fun MainScreen(
     onOverlayEnabledChange: (Boolean) -> Unit,
     onRequestOverlayPermission: () -> Unit,
     onOpenSettings: () -> Unit,
+    isMonitoringEnabled: Boolean = false,
+    onMonitoringToggle: () -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -90,6 +92,16 @@ fun MainScreen(
                     AppearanceCard(
                         preferences = preferences,
                         onOpenSettings = onOpenSettings,
+                    )
+                    MonitoringCard(
+                        onMonitoringToggle = {
+                            isMonitoringEnabled = !isMonitoringEnabled
+                            if (isMonitoringEnabled) {
+                                onOverlayEnabledChange(true)
+                            } else {
+                                onOverlayEnabledChange(false)
+                            }
+                        },
                     )
                 }
             }
@@ -232,6 +244,43 @@ private fun AppearanceRow(label: String, value: String) {
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun MonitoringCard(
+    isMonitoringEnabled: Boolean,
+    onMonitoringToggle: () -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.space(16.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.monitoring),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(
+                    onClick = onMonitoringToggle,
+                    modifier = Modifier.testTag(TestTags.MONITORING_TOGGLE),
+                ) {
+                    Text(
+                        text = if (isMonitoringEnabled) R.string.monitoring_stop else R.string.monitoring_start,
+                    )
+                }
+            }
+            Text(
+                text = stringResource(R.string.monitoring_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

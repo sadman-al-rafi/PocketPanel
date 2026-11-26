@@ -12,4 +12,5 @@ object TestTags {
     const val OVERLAY_HANDLE = "overlay_handle"
     const val OVERLAY_SWITCH = "overlay_switch"
     const val OVERLAY_PERMISSION_BUTTON = "overlay_permission_button"
+    const val MONITORING_TOGGLE = "monitoring_toggle"
 }

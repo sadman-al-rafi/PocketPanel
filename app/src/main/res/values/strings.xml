@@ -45,4 +45,9 @@
     <string name="overlay_notification_stop">Stop</string>
 
     <string name="settings_saved_note">Appearance changes apply immediately and are saved on this device.</string>
+    <!-- M3 system monitoring -->
+    <string name="monitoring">System Monitoring</string>
+    <string name="monitoring_description">Display CPU, RAM, battery and device info as an overlay.</string>
+    <string name="monitoring_start">Start Monitoring</string>
+    <string name="monitoring_stop">Stop Monitoring</string>
 </resources>
