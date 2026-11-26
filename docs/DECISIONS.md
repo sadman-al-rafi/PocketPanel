@@ -740,3 +740,11 @@ Consequences:
   device shows a problem.
 - Runtime behavior still requires device testing (D016); the next
   authorized CI run verifies compilation, lint and unit tests only.
+
+Follow-up 2026-11-26: CI run 45753602748 failed to compile because
+Lifecycle 2.11.1 no longer exposes `ViewTreeLifecycleOwner` as a public
+class. The overlay now uses the supported
+`View.setViewTreeLifecycleOwner(...)` extension from
+`lifecycle-runtime`, which is already on the compile classpath through
+`lifecycle-runtime-compose`. The two `getSystemService(...)` calls are
+also explicitly non-null. No dependency or version changed.

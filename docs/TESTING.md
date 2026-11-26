@@ -97,9 +97,14 @@ Current status (2026-11-26):
 - Runtime behavior (launch, theme switching, persistence, dynamic
   color) remains unverified because no device or emulator test is
   authorized (D016).
-- M2: no run has been authorized yet. The overlay code is committed
-  and locally checked only. Compilation, lint, unit tests and APK
-  results will be recorded here after an authorized manual run.
+- M2: authorized manual run 45753602748 (run 11, commit `ef88643`)
+  failed at `assembleDebug`. The only compiler error was
+  `Unresolved reference 'ViewTreeLifecycleOwner'` in
+  `OverlayWindowController.kt`: Lifecycle 2.11.1 no longer exposes that
+  class, and the supported API is the `View.setViewTreeLifecycleOwner`
+  extension. The code now uses the extension and explicit non-null
+  `getSystemService` results. Lint, unit tests and the APK did not run
+  in that attempt. A new authorized run is required.
 
 ## 4. Configuration Verification
 

@@ -195,7 +195,8 @@ blocked by the suspended device-testing policy (D016)
 ---
 
 ## M2 — Floating Overlay Foundation
-Status: [~] Implemented 2026-11-26 (commit `ee0bffd`); CI build and device verification pending
+Status: [~] Implemented 2026-11-26 (commit `ee0bffd`); first CI run failed
+on a removed Lifecycle API, fix pushed and awaiting re-run
 
 ### Objectives
 - Implement overlay permission handling.
@@ -249,7 +250,13 @@ Status: [~] Implemented 2026-11-26 (commit `ee0bffd`); CI build and device verif
   resources, manifest wiring, workflow policy).
 - JVM overlay geometry and handle-edge tests are written but not run
   locally; no JDK is available.
-- No build, lint, unit-test or device result exists for M2 yet.
+- Authorized manual run 45753602748 (run 11, commit `ef88643`) failed
+  at `assembleDebug` with `Unresolved reference
+  'ViewTreeLifecycleOwner'` in `OverlayWindowController.kt`. Lifecycle
+  2.11.1 no longer exposes that class; the supported API is the
+  `View.setViewTreeLifecycleOwner` extension. The code was fixed and
+  pushed, but the build has not been re-run.
+- No successful M2 build, lint, unit-test or device result exists yet.
 
 ### Deferred Beyond M2 Acceptance
 - Outside-tap collapse (a non-focusable overlay cannot receive outside

@@ -16,7 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
 import dev.pocketpanel.R
 import dev.pocketpanel.settings.HandleEdge
 import dev.pocketpanel.settings.UserPreferences
@@ -42,14 +42,14 @@ class OverlayWindowController(
 ) {
 
     private val appContext = context.applicationContext
-    private val windowManager = appContext.getSystemService(WindowManager::class.java)
+    private val windowManager = appContext.getSystemService(WindowManager::class.java)!!
     private val composeView = ComposeView(
         ContextThemeWrapper(appContext, R.style.Theme_PocketPanel),
     ).apply {
         // An overlay window has no Activity, so the service supplies the
         // lifecycle that Compose needs. Saved state and view models are not
         // used by the overlay.
-        ViewTreeLifecycleOwner.set(this, lifecycleOwner)
+        setViewTreeLifecycleOwner(lifecycleOwner)
         setContent {
             val currentPreferences = preferences
             val currentExpanded = expanded

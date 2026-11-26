@@ -193,7 +193,7 @@ class OverlayService : Service() {
     }
 
     private fun createNotificationChannel() {
-        val manager = getSystemService(NotificationManager::class.java)
+        val manager = getSystemService(NotificationManager::class.java)!!
         val channel = NotificationChannel(
             CHANNEL_ID,
             getString(R.string.overlay_notification_channel),
