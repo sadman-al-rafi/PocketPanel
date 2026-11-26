@@ -104,7 +104,13 @@ Current status (2026-11-26):
   class, and the supported API is the `View.setViewTreeLifecycleOwner`
   extension. The code now uses the extension and explicit non-null
   `getSystemService` results. Lint, unit tests and the APK did not run
-  in that attempt. A new authorized run is required.
+  in that attempt.
+- M2: authorized manual run 45754823414 (run 12, commit `5ec59d8`)
+  failed at `assembleDebug` with a JVM signature clash: the private
+  `expanded` property generates `setExpanded(Z)V`, which collided with
+  `private fun setExpanded(Boolean)`. The function was renamed to
+  `applyExpanded`. Lint, unit tests and the APK did not run. A new
+  authorized run is required.
 
 ## 4. Configuration Verification
 

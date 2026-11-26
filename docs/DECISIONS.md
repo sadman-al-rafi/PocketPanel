@@ -748,3 +748,9 @@ class. The overlay now uses the supported
 `lifecycle-runtime`, which is already on the compile classpath through
 `lifecycle-runtime-compose`. The two `getSystemService(...)` calls are
 also explicitly non-null. No dependency or version changed.
+
+Follow-up 2026-11-26: CI run 45754823414 then hit a JVM signature
+clash because the private `expanded` state property generates a
+`setExpanded(Z)V` setter, which collided with the private
+`setExpanded(Boolean)` helper. The helper is now `applyExpanded`;
+behavior and state names are unchanged.

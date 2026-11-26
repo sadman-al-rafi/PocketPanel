@@ -195,8 +195,9 @@ blocked by the suspended device-testing policy (D016)
 ---
 
 ## M2 — Floating Overlay Foundation
-Status: [~] Implemented 2026-11-26 (commit `ee0bffd`); first CI run failed
-on a removed Lifecycle API, fix pushed and awaiting re-run
+Status: [~] Implemented 2026-11-26 (commit `ee0bffd`); two CI compile
+failures fixed (removed Lifecycle API, JVM signature clash), awaiting
+re-run
 
 ### Objectives
 - Implement overlay permission handling.
@@ -254,8 +255,12 @@ on a removed Lifecycle API, fix pushed and awaiting re-run
   at `assembleDebug` with `Unresolved reference
   'ViewTreeLifecycleOwner'` in `OverlayWindowController.kt`. Lifecycle
   2.11.1 no longer exposes that class; the supported API is the
-  `View.setViewTreeLifecycleOwner` extension. The code was fixed and
-  pushed, but the build has not been re-run.
+  `View.setViewTreeLifecycleOwner` extension.
+- Authorized manual run 45754823414 (run 12, commit `5ec59d8`) then
+  failed at `assembleDebug` with a JVM signature clash:
+  `private var expanded` generates `setExpanded(Z)V`, which collided
+  with `private fun setExpanded(Boolean)`. The function is now
+  `applyExpanded`.
 - No successful M2 build, lint, unit-test or device result exists yet.
 
 ### Deferred Beyond M2 Acceptance

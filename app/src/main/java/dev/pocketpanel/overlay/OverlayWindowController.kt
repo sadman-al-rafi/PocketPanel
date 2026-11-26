@@ -62,7 +62,7 @@ class OverlayWindowController(
                     preferences = currentPreferences,
                     expanded = currentExpanded,
                     onToggleExpanded = ::toggleExpanded,
-                    onCollapse = { setExpanded(false) },
+                    onCollapse = { applyExpanded(false) },
                     onDragStart = ::onDragStart,
                     onDrag = ::onDrag,
                     onDragEnd = ::onDragEnd,
@@ -151,10 +151,14 @@ class OverlayWindowController(
     }
 
     private fun toggleExpanded() {
-        setExpanded(!expanded)
+        applyExpanded(!expanded)
     }
 
-    private fun setExpanded(newExpanded: Boolean) {
+    /**
+     * Named `applyExpanded` rather than `setExpanded` because the
+     * `expanded` property already generates a `setExpanded` JVM setter.
+     */
+    private fun applyExpanded(newExpanded: Boolean) {
         if (expanded == newExpanded) return
         expanded = newExpanded
         if (attached) applyPlacement(newExpanded)
