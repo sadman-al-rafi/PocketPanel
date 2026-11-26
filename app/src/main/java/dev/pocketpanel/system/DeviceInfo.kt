@@ -45,7 +45,12 @@ data class DeviceInfo(
             val pm = context.getSystemService(PowerManager::class.java)
             val im = context.getSystemService(android.content.Context.BATTERY_SERVICE) as? BatteryManager
 
-            val level = if (im != null && im.isLevelKnown) im.getInt(BatteryManager.BATTERY_PROPERTY_CAPACITY) else null
+            val level = if (im != null) {
+                // isLevelKnown was removed in newer Android versions;
+                // try reading capacity directly and fall back to null.
+                val cap = im.getInt(BatteryManager.BATTERY_PROPERTY_CAPACITY).coerceIn(0, 100)
+                cap
+            } else null
             val status = if (im != null) im.getInt(BatteryManager.BATTERY_PROPERTY_STATUS) else null
             val health = if (im != null) im.getInt(BatteryManager.BATTERY_PROPERTY_HEALTH) else null
             val plugged = if (im != null) im.isCharging else null

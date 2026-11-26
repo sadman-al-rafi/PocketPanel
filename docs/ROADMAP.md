@@ -279,7 +279,7 @@ Status: [✓] Implemented 2026-11-26 (commit `c254da9`); M2 authorized manual
 ---
 
 ## M3 — Basic System Monitoring
-Status: [✓] Started 2026-11-26 (commit `bd9abdd`); CI authorized run pending on commit `bd9abdd`.
+Status: [~] In Progress 2026-11-26; CI authorized run pending on commit `2a900ea` (run 14 pending after `Unresolved reference 'Context'` fix).
 
 ### Objectives
 - CPU usage monitoring.

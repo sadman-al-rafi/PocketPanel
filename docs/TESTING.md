@@ -116,16 +116,32 @@ Current status (2026-11-26):
   implements `SavedStateRegistryOwner` and attaches an empty registry;
   `androidx.savedstate:savedstate:1.5.0` is now declared explicitly
   (D019). This fix has not been compiled yet.
+- **M2: authorized manual run 45754823414 (run 12, commit `5ec59d8`)
+  failed at `assembleDebug` with a JVM signature clash: the private
+  `expanded` property generates `setExpanded(Z)V`, which collided with
+  `private fun setExpanded(Boolean)`. The function was renamed to
+  `applyExpanded`. Lint, unit tests and the APK did not run.
+- Static review of the Compose 1.13 source found that `ComposeView`
+  throws when no `ViewTreeSavedStateRegistryOwner` is present, even
+  though the overlay restores nothing. `OverlayLifecycleOwner` now
+  implements `SavedStateRegistryOwner` and attaches an empty registry;
+  `androidx.savedstate:savedstate:1.5.0` is now declared explicitly
+  (D019). This fix has not been compiled yet.
 - **Run 45756276354 (run 13, commit `c254da9`) succeeded**: build
   successful, lint 0 errors/5 warnings, 5/5 JVM tests passed, APK
   13,961,294 bytes, sha256 `49d058a479459b6507e3477e5f54fcc6bc70bae248100bd574c23fd769ec4838`. M2 acceptance criteria are
   satisfied from a compilation/lint/test perspective. Runtime overlay
   behavior remains unverified because no device or emulator test is
   authorized (D016).
-- **M3: CI authorized run pending on commit `bd9abdd`**. Development
+- **Run 45770033796 (run 14, commit `2a900ea`) failed** at
+  `assembleDebug` with `Unresolved reference 'Context'` in
+  `DeviceInfo.kt:43`. The `load(Context)` function's parameter type
+  `Context` was missing its import. The import has been added and a
+  new authorized run is required.
+- **M3: CI authorized run pending on commit `2a900ea`**. Development
   started 2026-11-26; adds system monitoring (CPU, RAM, battery) with
-  configurable intervals. CI run authorized but not yet triggered;
-  requires JDK 17 and Android SDK for `assembleDebug`/lint/tests.
+  configurable intervals. A compile-fix has been pushed; a new
+  authorized CI run is required.
 
 ## 4. Configuration Verification
 
