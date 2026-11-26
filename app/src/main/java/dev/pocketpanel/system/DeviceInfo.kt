@@ -1,5 +1,6 @@
 package dev.pocketpanel.system
 
+import android.content.Context
 import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager

@@ -122,6 +122,10 @@ Current status (2026-11-26):
   satisfied from a compilation/lint/test perspective. Runtime overlay
   behavior remains unverified because no device or emulator test is
   authorized (D016).
+- **M3: CI authorized run pending on commit `bd9abdd`**. Development
+  started 2026-11-26; adds system monitoring (CPU, RAM, battery) with
+  configurable intervals. CI run authorized but not yet triggered;
+  requires JDK 17 and Android SDK for `assembleDebug`/lint/tests.
 
 ## 4. Configuration Verification
 
@@ -140,6 +144,8 @@ Current status (2026-11-26):
   lifecycle-runtime-compose and lifecycle-viewmodel-compose 2.11.1,
   savedstate 1.5.0, JUnit 4.13.2, androidx.test ext-junit 1.3.0 and
   runner 1.7.0 (D014, D019).
+- M3 additions: system 1.0.0 (custom DeviceInfo + Runtime), runtime-
+  compose (for MonitoringScreen), no new external dependencies.
 
 ## 5. Application Verification
 
