@@ -987,8 +987,9 @@ Consequences:
 - The first connection requires a system consent dialog.
 - No app notification is created for the VPN; Android's own VPN
   indicator is the system feedback.
-- CI verifies compilation, native packaging and JVM tests but cannot
-  exercise a real tunnel; device verification is user-reported (D016).
+- CI verifies compilation, lint and JVM tests and produces the debug
+  APK, but cannot exercise a real tunnel; device verification is
+  user-reported (D016).
 
 Verified sources (checked 2026-11-27):
 - https://central.sonatype.com/artifact/com.wireguard.android/tunnel
@@ -1000,6 +1001,14 @@ Verified sources (checked 2026-11-27):
   `GoBackend.java`, `ui/build.gradle.kts`). These correct the earlier
   assumption that the app must promote the VPN service to the foreground
   with `specialUse`.
+
+Verification: CI run `45962542309` (run 24, commit `5ecbc25`) passed
+build, lint and 38/38 JVM tests, including 13 parser cases. Lint had 0
+errors and 5 pre-existing warnings. The debug APK was 27,989,171 bytes
+(sha256 `c21ade4cbbdab100943eb25b2eb8ae64cc61a4211567095a8bb5508e89900fac`).
+Run 23 (`45962342278`) failed on a Kotlin override mismatch in
+`VpnTunnel`; the fix was verified by run 24. Device behavior remains
+unverified.
 
 ### D024 — CI Runs on Push
 

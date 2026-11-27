@@ -345,17 +345,21 @@ consent, connect, disconnect and revocation.
 
 ## 12. VPN Verification (M6)
 
-Planned; not executed yet. Full tunnel behavior cannot be verified in
-CI because no emulator is provisioned (D016).
+Automated verification was executed on 2026-11-27. Full tunnel behavior
+cannot be verified in CI because no emulator is provisioned (D016).
 
-Automated (CI on push):
-- Build with the WireGuard tunnel library and confirm the native
-  libraries are packaged for the supported ABIs.
-- Lint with the VPN code and library dependency.
-- JVM tests: configuration parsing and validation, including missing
-  sections, invalid keys and secret redaction.
-- Static checks: library dependency and consent wiring, permission
-  allowlist, and no duplicate VPN service declaration.
+Automated (executed):
+- CI run `45962542309` (run 24, commit `5ecbc25`) passed
+  `assembleDebug`, `lintDebug` and `testDebugUnitTest`.
+- 38 JVM tests passed, 0 failures; 13 of them are
+  `WireGuardConfigParserTest` cases.
+- Lint: 0 errors, 5 pre-existing warnings.
+- `scripts/check-static.sh`: 86/86 checks passed, including the new VPN
+  dependency, consent and duplicate-service checks.
+- Native ABI contents of the APK were not inspected in the published
+  results; the build with the library AAR succeeded.
+- Run 23 (`45962342278`) failed to compile on `override val name` in
+  `VpnTunnel`; the fix was pushed and verified by run 24.
 
 Manual device verification (user-reported):
 - First connect shows the system VPN consent dialog; denial leaves the

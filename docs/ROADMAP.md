@@ -411,8 +411,9 @@ confirmed that network data and the ping row work on a test device.
 ---
 
 ## M6 — WireGuard VPN Client
-Status: [~] Implemented in commits `3edf714` and `b972f56`; build, lint
-and tests pending CI verification (D024). Device verification not run.
+Status: [✓] Implemented and build verified 2026-11-27 (CI run 24,
+commit `5ecbc25`). Device verification not run; see the verification
+record below.
 
 ### Objectives
 - Add an embedded WireGuard client using the official
@@ -453,13 +454,13 @@ and tests pending CI verification (D024). Device verification not run.
       and never written to logs, plain DataStore or crash output.
 - [ ] Invalid or incomplete configurations are rejected with a clear
       error; no partial or fabricated connection state.
-- [ ] The app adds no foreground service type or notification channel for
+- [x] The app adds no foreground service type or notification channel for
       the VPN; the library service is managed by the system.
 - [ ] Standard mode remains functional with the VPN off; no root or
       Shizuku dependency.
-- [ ] The connect/disconnect state is exposed through a reusable
+- [x] The connect/disconnect state is exposed through a reusable
       repository surface for a future overlay button.
-- [ ] Build, lint and JVM tests pass in CI (D024).
+- [x] Build, lint and JVM tests pass in CI (D024).
 
 ### Out of Scope for M6
 - The overlay side-panel on/off button. M6 exposes the control
@@ -490,6 +491,26 @@ and tests pending CI verification (D024). Device verification not run.
   library uses `List.of` and `java.time`, which are not available on all
   supported API levels without it. The first M6 CI run confirms
   Kotlin/AGP compatibility and native packaging.
+
+### Verification Record (2026-11-27)
+- CI run `45962542309` (run 24), commit `5ecbc25`: `assembleDebug`,
+  `lintDebug` and `testDebugUnitTest` all succeeded.
+- JVM tests: 38 tests, 0 failures. `WireGuardConfigParserTest` adds 13
+  cases; the 25 earlier tests still pass.
+- Lint: 0 errors, 5 warnings, the same categories as M5 (OldTargetApi,
+  AndroidGradlePluginVersion, DataExtractionRules and UseKtx). No new
+  VPN lint warning.
+- Debug APK: 27,989,171 bytes; sha256
+  `c21ade4cbbdab100943eb25b2eb8ae64cc61a4211567095a8bb5508e89900fac`.
+  The M5 APK was 14,025,981 bytes, so M6 adds 13,963,190 bytes (about
+  13.3 MiB), consistent with the four native ABIs and desugared classes.
+- CI run `45962342278` (run 23, commit `b972f56`) failed to compile:
+  `VpnTunnel` used `override val name` for the Java `Tunnel.getName()`
+  method. The fix implements `override fun getName()`.
+- `scripts/check-static.sh`: 86/86 checks pass.
+- Not verified in CI: a real tunnel, the consent dialog, revocation,
+  Keystore encryption on a device and the ABI contents of the APK. These
+  need a device and are user-reported (D016).
 
 ---
 
