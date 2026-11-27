@@ -147,8 +147,18 @@ Manual inputs:
 Workflow actions: validate the tag and secrets, decode the keystore into a
 temporary runner file, build `:app:assembleRelease`, verify the APK with
 `apksigner`, compare the certificate fingerprint to `RELEASE_CERT_SHA256`,
-upload the signed APK as an artifact, and create the GitHub Release with
-generated notes. The temporary keystore is removed in an `always()` step.
+upload the signed APK as an artifact, create a source zip from the released
+commit with `git archive`, upload that as a second artifact, and create the
+GitHub Release with both the APK and the source zip plus generated notes.
+The temporary keystore is removed in an `always()` step.
+
+The source zip contains only tracked files at the released commit. It does
+not contain `.git`, build outputs, local configuration or any signing
+material. Locally, the equivalent archive can be produced with:
+
+```bash
+git archive --format=zip --output=pocketpanel-source.zip HEAD
+```
 
 ## 7. Publishing procedure
 
@@ -162,8 +172,9 @@ generated notes. The temporary keystore is removed in an `always()` step.
 5. Approve the `release` environment review.
 6. Confirm the run log shows a successful `apksigner` verification and a
    matching certificate fingerprint.
-7. Check the GitHub Release page: tag, notes and signed APK asset.
-8. Verify the downloaded asset again with `apksigner verify --print-certs`.
+7. Check the GitHub Release page: tag, notes, signed APK and source zip.
+8. Verify the downloaded APK again with `apksigner verify --print-certs`,
+   and confirm the source zip unpacks to the expected tracked tree.
 9. Record the release tag, commit, APK digest and run ID in the project log.
 
 Do not dispatch the release workflow without explicit owner approval, and

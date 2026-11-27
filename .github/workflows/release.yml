@@ -33,6 +33,7 @@ jobs:
     if: inputs.confirm == 'PUBLISH'
     env:
       RELEASE_KEYSTORE: ${{ runner.temp }}/pocketpanel-release.jks
+      SOURCE_ZIP: ${{ runner.temp }}/pocketpanel-source.zip
       POCKETPANEL_RELEASE_STORE_FILE: ${{ runner.temp }}/pocketpanel-release.jks
       POCKETPANEL_RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
       POCKETPANEL_RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
@@ -104,6 +105,13 @@ jobs:
             exit 1
           fi
 
+      - name: Create source archive from the released commit
+        run: |
+          set -euo pipefail
+          # git archive includes only tracked files at this commit, so no
+          # local secrets, build outputs or untracked files are packaged.
+          git archive --format=zip --output="$SOURCE_ZIP" "$GITHUB_SHA"
+
       - name: Upload signed APK
         uses: actions/upload-artifact@v7
         with:
@@ -111,11 +119,18 @@ jobs:
           path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
 
+      - name: Upload source archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: pocketpanel-source
+          path: ${{ runner.temp }}/pocketpanel-source.zip
+          if-no-files-found: error
+
       - name: Create GitHub Release
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/release/app-release.apk
-          gh release create "$RELEASE_TAG" "$APK" \
+          gh release create "$RELEASE_TAG" "$APK" "$SOURCE_ZIP" \
             --title "PocketPanel ${RELEASE_TAG#v}" \
             --generate-notes \
             --target "$GITHUB_SHA"
