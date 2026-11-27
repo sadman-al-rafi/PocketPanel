@@ -41,9 +41,6 @@ jobs:
     environment: release
     if: inputs.dry_run || inputs.confirm == 'PUBLISH'
     env:
-      RELEASE_KEYSTORE: ${{ runner.temp }}/pocketpanel-release.jks
-      SOURCE_ZIP: ${{ runner.temp }}/pocketpanel-source.zip
-      POCKETPANEL_RELEASE_STORE_FILE: ${{ runner.temp }}/pocketpanel-release.jks
       POCKETPANEL_RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
       POCKETPANEL_RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
       POCKETPANEL_RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
@@ -93,11 +90,15 @@ jobs:
             echo "RELEASE_KEYSTORE_BASE64 secret is missing" >&2
             exit 1
           fi
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RELEASE_KEYSTORE"
-          chmod 600 "$RELEASE_KEYSTORE"
+          KEYSTORE="$RUNNER_TEMP/pocketpanel-release.jks"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          chmod 600 "$KEYSTORE"
 
       - name: Build signed release APK
-        run: ./gradlew :app:assembleRelease --stacktrace
+        run: |
+          set -euo pipefail
+          export POCKETPANEL_RELEASE_STORE_FILE="$RUNNER_TEMP/pocketpanel-release.jks"
+          ./gradlew :app:assembleRelease --stacktrace
 
       - name: Verify APK signature and certificate fingerprint
         run: |
@@ -135,7 +136,7 @@ jobs:
           set -euo pipefail
           # git archive includes only tracked files at this commit, so no
           # local secrets, build outputs or untracked files are packaged.
-          git archive --format=zip --output="$SOURCE_ZIP" "$GITHUB_SHA"
+          git archive --format=zip --output=pocketpanel-source.zip "$GITHUB_SHA"
 
       - name: Upload signed APK
         uses: actions/upload-artifact@v7
@@ -148,7 +149,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: pocketpanel-source
-          path: ${{ runner.temp }}/pocketpanel-source.zip
+          path: pocketpanel-source.zip
           if-no-files-found: error
 
       - name: Create GitHub Release
@@ -156,6 +157,7 @@ jobs:
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/release/app-release.apk
+          SOURCE_ZIP=pocketpanel-source.zip
           NOTES_FILE="$RUNNER_TEMP/pocketpanel-release-notes.md"
           if [ -n "$RELEASE_NOTES" ]; then
             printf '%s\n' "$RELEASE_NOTES" > "$NOTES_FILE"
@@ -170,4 +172,4 @@ jobs:
 
       - name: Remove temporary keystore
         if: always()
-        run: rm -f "$RELEASE_KEYSTORE"
+        run: rm -f "$RUNNER_TEMP/pocketpanel-release.jks"

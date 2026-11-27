@@ -627,6 +627,12 @@ else
     fail "release workflow is not manual-only"
 fi
 
+if grep -q '${{ runner.temp }}' "$release_workflow"; then
+    fail "release workflow uses runner context where GitHub cannot evaluate it"
+else
+    ok
+fi
+
 if grep -q 'environment: release' "$release_workflow" \
     && grep -q "inputs.confirm == 'PUBLISH'" "$release_workflow" \
     && grep -q 'inputs.dry_run' "$release_workflow" \
