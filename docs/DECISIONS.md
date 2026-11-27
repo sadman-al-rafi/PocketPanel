@@ -845,4 +845,6 @@ Consequences:
 - No new dependencies.
 - CPU usage and CPU/SoC temperature may be unavailable on some devices;
   the UI states this explicitly.
-- The rewrite is not yet compiled; an authorized CI run is required.
+- Authorized run 45824780276 (run 20, commit `ca9ba8a`) verified the
+  rewrite: build, lint (0 errors) and 15/15 JVM tests passed. Runtime
+  behavior still needs device testing (D016).

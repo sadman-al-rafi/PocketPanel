@@ -143,15 +143,27 @@ Current status (2026-11-26):
     `StringBuilder` helper that emitted XML, and a reference to a
     non-existent `com.github.lin7xv.library.cpuinfo` library. Fixing
     one reported error only exposed the next one.
-- **M3/M4 rewrite (not yet compiled)**: the system package was rewritten
-  using documented framework APIs only: `ActivityManager.MemoryInfo`
-  for memory, the sticky `ACTION_BATTERY_CHANGED` broadcast for
+- **M3/M4 rewrite**: the system package was rewritten using documented
+  framework APIs only: `ActivityManager.MemoryInfo` for memory, the
+  sticky `ACTION_BATTERY_CHANGED` broadcast for
   level/temperature/health, and `/proc/stat` deltas for best-effort CPU
   usage. Monitoring state and interval are persisted in DataStore.
   Unsupported values remain null and are rendered as "Not available".
   No new dependencies were added. `./scripts/check-static.sh` passes
-  75/75. Compilation, lint, unit tests and the APK have NOT been
-  verified; a new authorized CI run is required.
+  75/75.
+- **Run 45824780276 (run 20, commit `ca9ba8a`) succeeded**:
+  - `assembleDebug`: success.
+  - `lintDebug`: 0 errors, 5 warnings. The warnings are the same
+    pre-existing ones: `OldTargetApi`, `AndroidGradlePluginVersion`,
+    `DataExtractionRules`, and `UseKtx` in `OverlayPermission.kt:29`.
+    No new warning comes from the M3/M4 code.
+  - `testDebugUnitTest`: 15 tests, 0 failures, 0 ignored
+    (`OverlayGeometryTest` 7, `ThemeModeTest` 5, `HandleEdgeTest` 3),
+    all at 100%.
+  - Debug APK: 14,003,861 bytes, sha256
+    `1adee21605bdf0cb7707f89a6e3bb40fb6946303aaa8dde89654b243ea887802`.
+  - Runtime monitoring behavior is not covered by CI and remains
+    unverified (D016).
 
 ## 4. Configuration Verification
 - `compileSdk 37.1` (API 37 with `minorApiLevel = 1`), `targetSdk 36`,

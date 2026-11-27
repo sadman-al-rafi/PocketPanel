@@ -281,11 +281,13 @@ Status: [✓] Implemented 2026-11-26 (commit `c254da9`); M2 authorized manual
 ---
 
 ## M3 — Basic System Monitoring
-Status: [~] In Progress 2026-11-26 (started at commit `bd9abdd`).
-Implementation was rewritten after authorized runs 14-19 failed on
-invalid placeholder code (not a toolchain incompatibility). A new
-authorized CI run is required before this milestone can be marked
-complete.
+Status: [✓] Implemented 2026-11-27 (commit `ca9ba8a`). Implementation
+was rewritten after authorized runs 14-19 failed on
+invalid placeholder code (not a toolchain incompatibility). Authorized
+manual run 45824780276 (run 20, commit `ca9ba8a`) succeeded: build,
+lint 0 errors / 5 pre-existing warnings, 15/15 JVM tests and the debug
+APK. Runtime monitoring behavior remains unverified because no device
+or emulator test is authorized (D016).
 
 ### Objectives
 - CPU usage monitoring.
@@ -295,12 +297,17 @@ complete.
 - Configurable monitoring intervals.
 
 ### Acceptance Criteria
-- [ ] Supported readings are real.
-- [ ] Unsupported readings are clearly identified.
-- [ ] Monitoring updates correctly.
-- [ ] Monitoring can be stopped.
-- [ ] No fake production readings.
-- [ ] Build and tests pass.
+- [✓] Supported readings are real. Memory, battery and CPU values come
+      from documented platform APIs; CPU usage is best-effort from
+      `/proc/stat`.
+- [✓] Unsupported readings are clearly identified. Null values render
+      as "Not available".
+- [~] Monitoring updates correctly. Implemented with interval polling;
+      needs device verification.
+- [~] Monitoring can be stopped. Implemented with the monitoring
+      switch; needs device verification.
+- [✓] No fake production readings.
+- [✓] Build and tests pass (run 20).
 
 ### Implementation Notes
 - `DeviceInfo` reads memory through `ActivityManager.MemoryInfo`,
@@ -313,14 +320,16 @@ complete.
   `SettingsRepository` (DataStore) and exposes them in
   `PocketPanelUiState`.
 - Unsupported values remain null and are shown as "Not available".
-- Local static checks pass 75/75. Compilation, lint, unit tests and the
-  APK are not yet verified.
+- Local static checks pass 75/75. Run 20 verified compilation, lint,
+  15/15 JVM tests and the APK.
 
 ---
 
 ## M4 — Temperature and Hardware Discovery
-Status: [~] In Progress 2026-11-26. Battery temperature is implemented
-through the M3 monitoring pipeline; CI verification is pending.
+Status: [✓] Implemented 2026-11-27 (commit `ca9ba8a`). Battery
+temperature is implemented through the M3 monitoring pipeline and run
+45824780276 (run 20) verified build, lint and tests. Runtime reading
+remains unverified because no device test is authorized (D016).
 
 ### Objectives
 - Discover available thermal information.
@@ -329,11 +338,14 @@ through the M3 monitoring pipeline; CI verification is pending.
 - Provide clear unsupported states.
 
 ### Acceptance Criteria
-- [ ] Thermal sources are discovered safely.
-- [ ] Available readings are displayed correctly.
-- [ ] Unsupported sources do not crash the app.
-- [ ] No fabricated readings.
-- [ ] Build and tests pass.
+- [✓] Thermal sources are discovered safely. Battery temperature is
+      read from the documented sticky battery broadcast; an absent
+      extra yields null.
+- [~] Available readings are displayed correctly. Implemented in the
+      monitoring card; needs device verification.
+- [✓] Unsupported sources do not crash the app.
+- [✓] No fabricated readings.
+- [✓] Build and tests pass (run 20).
 
 ### Implementation Notes
 - Battery temperature (`BatteryManager.EXTRA_TEMPERATURE`) is the
