@@ -6,7 +6,6 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import dev.pocketpanel.system.CpuUsage
 import dev.pocketpanel.system.CpuUsageMath
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -34,7 +33,7 @@ class ShizukuHardwareAccess(context: Context) : ElevatedHardwareAccess {
     private var bindAttempted = false
     private var previousCpu: Pair<Long, Long>? = null
     private var socZone: Pair<String, String>? = null
-    private var gpuBusyPath: Pair<String, BusyKind>? = null
+    private var gpuBusyPath: Pair<String, ElevatedParsers.BusyKind>? = null
     private var gpuClockPath: String? = null
     private var discoveryDone = false
 
@@ -103,7 +102,10 @@ class ShizukuHardwareAccess(context: Context) : ElevatedHardwareAccess {
         discoveryDone = true
         socZone = findSocZone(remote)
         gpuBusyPath = GPU_BUSY_CANDIDATES.firstNotNullOfOrNull { (path, kind) ->
-            val value = parseBusy(remote.readTextFile(path)?.trim(), kind)
+            val value = ElevatedParsers.busyPercent(
+                remote.readTextFile(path)?.trim(),
+                kind,
+            )
             if (value == null) null else path to kind
         }
         gpuClockPath = GPU_CLOCK_CANDIDATES.firstOrNull { path ->
@@ -124,12 +126,10 @@ class ShizukuHardwareAccess(context: Context) : ElevatedHardwareAccess {
             }
 
         for ((name, type) in zones) {
-            val temperature = remote.readTextFile("$THERMAL_ROOT/$name/temp")
-                ?.trim()
-                ?.toLongOrNull()
-                ?: continue
-            val celsius = temperature / 1000f
-            if (celsius in 0f..150f) return "$THERMAL_ROOT/$name/temp" to type
+            val celsius = ElevatedParsers.thermalCelsius(
+                remote.readTextFile("$THERMAL_ROOT/$name/temp"),
+            ) ?: continue
+            return "$THERMAL_ROOT/$name/temp" to type
         }
         return null
     }
@@ -152,57 +152,33 @@ class ShizukuHardwareAccess(context: Context) : ElevatedHardwareAccess {
 
     private fun readSocTemperature(remote: IHardwareService): SocTemperature? {
         val (path, type) = socZone ?: return null
-        val raw = remote.readTextFile(path)?.trim()?.toLongOrNull() ?: return null
-        val celsius = raw / 1000f
-        return if (celsius in 0f..150f) SocTemperature(celsius, type) else null
+        val celsius = ElevatedParsers.thermalCelsius(remote.readTextFile(path))
+            ?: return null
+        return SocTemperature(celsius, type)
     }
 
     private fun readGpuBusy(remote: IHardwareService): Int? {
         val (path, kind) = gpuBusyPath ?: return null
-        return parseBusy(remote.readTextFile(path)?.trim(), kind)
+        return ElevatedParsers.busyPercent(remote.readTextFile(path)?.trim(), kind)
     }
 
     private fun readGpuClock(remote: IHardwareService): Long? {
         val path = gpuClockPath ?: return null
-        return remote.readTextFile(path)?.trim()?.toLongOrNull()?.takeIf { it > 0L }
+        return ElevatedParsers.gpuClockKhz(remote.readTextFile(path))
     }
-
-    private fun parseBusy(text: String?, kind: BusyKind): Int? {
-        if (text.isNullOrEmpty()) return null
-        return when (kind) {
-            BusyKind.PERCENT -> text.toIntOrNull()?.coerceIn(0, 100)
-            BusyKind.KGSL_RATIO -> {
-                val parts = text.split(WHITESPACE)
-                if (parts.size != 2) {
-                    null
-                } else {
-                    val busy = parts[0].toLongOrNull() ?: return null
-                    val total = parts[1].toLongOrNull() ?: return null
-                    if (total <= 0L || busy < 0L || busy > total) {
-                        null
-                    } else {
-                        (busy * 100L / total).toInt().coerceIn(0, 100)
-                    }
-                }
-            }
-        }
-    }
-
-    private enum class BusyKind { PERCENT, KGSL_RATIO }
 
     private companion object {
         const val USER_SERVICE_TAG = "pocketpanel-hardware"
         const val BIND_TIMEOUT_MS = 3_000L
         const val PROC_STAT = "/proc/stat"
         const val THERMAL_ROOT = "/sys/class/thermal"
-        val WHITESPACE = Regex("\\s+")
         val GPU_BUSY_CANDIDATES = listOf(
-            "/sys/class/kgsl/kgsl-3d0/gpu_busy_percentage" to BusyKind.PERCENT,
-            "/sys/class/kgsl/kgsl-3d0/gpubusy" to BusyKind.KGSL_RATIO,
-            "/sys/class/misc/mali0/device/utilisation" to BusyKind.PERCENT,
-            "/sys/kernel/ged/hal/gpu_utilization" to BusyKind.PERCENT,
-            "/sys/module/ged/parameters/gpu_loading" to BusyKind.PERCENT,
-            "/sys/class/drm/card0/device/gpu_busy_percent" to BusyKind.PERCENT,
+            "/sys/class/kgsl/kgsl-3d0/gpu_busy_percentage" to ElevatedParsers.BusyKind.PERCENT,
+            "/sys/class/kgsl/kgsl-3d0/gpubusy" to ElevatedParsers.BusyKind.KGSL_RATIO,
+            "/sys/class/misc/mali0/device/utilisation" to ElevatedParsers.BusyKind.PERCENT,
+            "/sys/kernel/ged/hal/gpu_utilization" to ElevatedParsers.BusyKind.PERCENT,
+            "/sys/module/ged/parameters/gpu_loading" to ElevatedParsers.BusyKind.PERCENT,
+            "/sys/class/drm/card0/device/gpu_busy_percent" to ElevatedParsers.BusyKind.PERCENT,
         )
         val GPU_CLOCK_CANDIDATES = listOf(
             "/sys/kernel/gpu/gpu_clock",

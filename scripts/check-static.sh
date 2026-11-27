@@ -76,6 +76,8 @@ required_files=(
     "app/src/main/java/dev/pocketpanel/elevated/ShizukuCapability.kt"
     "app/src/main/java/dev/pocketpanel/elevated/ElevatedModels.kt"
     "app/src/main/java/dev/pocketpanel/elevated/ShizukuHardwareAccess.kt"
+    "app/src/main/java/dev/pocketpanel/elevated/ElevatedParsers.kt"
+    "app/src/test/java/dev/pocketpanel/elevated/ElevatedParsersTest.kt"
     "app/src/main/res/drawable/ic_notification.xml"
     "app/src/main/res/values/strings.xml"
     "app/src/main/res/values/themes.xml"
@@ -416,6 +418,13 @@ if grep -q 'elevatedAccess?.snapshot()' \
     ok
 else
     fail "elevated readings are not wired into monitoring"
+fi
+
+if grep -q 'ElevatedParsers.busyPercent' \
+    app/src/main/java/dev/pocketpanel/elevated/ShizukuHardwareAccess.kt; then
+    ok
+else
+    fail "elevated GPU parsing is not centralised"
 fi
 
 # --- VPN wiring -------------------------------------------------------------
