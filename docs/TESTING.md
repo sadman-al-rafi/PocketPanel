@@ -288,7 +288,8 @@ Specific checks:
   estimate comes from cpufreq sysfs values and is clamped to 0-100. If
   neither source is readable the row shows "Not available", not 0%.
 - JVM tests cover counter deltas, frequency estimation and `/proc/stat`
-  parsing without double-counting guest time.
+  parsing without double-counting guest time. All 7 cases passed in CI
+  run 26. The on-device CPU row is still unverified.
 - RAM: `ActivityManager.MemoryInfo` values match a system reference
   within reasonable tolerance.
 - Battery: level, status, temperature and voltage match system

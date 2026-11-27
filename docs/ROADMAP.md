@@ -291,8 +291,10 @@ or emulator test was authorized at that time (D016).
 
 2026-11-27 bug fix (before M7): the CPU row was empty on every test
 device because `/proc/stat` is unreadable by apps on API 26+. D025 adds
-a clearly labelled cpufreq-based fallback. CI and device verification
-are pending.
+a clearly labelled cpufreq-based fallback. CI run `45964971185`
+(run 26, commit `56212e1`) passed build, lint and 45/45 JVM tests,
+including 7 new `CpuUsageMathTest` cases. Device verification of the
+CPU row is pending.
 
 ### Objectives
 - CPU usage monitoring.
@@ -327,8 +329,8 @@ are pending.
   `SettingsRepository` (DataStore) and exposes them in
   `PocketPanelUiState`.
 - Unsupported values remain null and are shown as "Not available".
-- Local static checks pass 75/75. Run 20 verified compilation, lint,
-  15/15 JVM tests and the APK.
+- Local static checks pass 92/92. Run 26 verified compilation, lint,
+  45/45 JVM tests and the APK after the D025 CPU fallback.
 
 ---
 

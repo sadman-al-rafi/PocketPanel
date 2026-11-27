@@ -1089,3 +1089,11 @@ Consequences: supported devices should now show a CPU percentage, but it
 may be an estimate. The UI distinguishes measured from estimated values.
 The fallback is not a substitute for a real counter on devices where the
 sysfs files are also blocked.
+
+Verification: `scripts/check-static.sh` passes 92/92 checks, including
+new checks for the fallback and the estimate label. CI run
+`45964971185` (run 26, commit `56212e1`) passed build, lint (0 errors,
+5 pre-existing warnings) and 45/45 JVM tests; 7 of them are new
+`CpuUsageMathTest` cases. The debug APK is 27,990,083 bytes (sha256
+`7d5aa1258252518e17f474ceb4c1e578d673f930037bb01d25ff77aa3eab86b5`).
+The CPU row itself still needs verification on a test device.
