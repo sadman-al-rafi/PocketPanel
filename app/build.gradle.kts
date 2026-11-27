@@ -24,6 +24,7 @@ android {
 
     buildFeatures {
         compose = true
+        aidl = true
     }
 
     compileOptions {
@@ -49,6 +50,11 @@ dependencies {
     // Official WireGuard tunnel library. It declares the VpnService and
     // packages the native backend for every supported ABI.
     implementation(libs.wireguard.tunnel)
+
+    // Optional elevated access. Both libraries are used only behind the
+    // capability boundary in dev.pocketpanel.elevated.
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
 
     implementation(libs.compose.foundation)
     implementation(libs.compose.ui)

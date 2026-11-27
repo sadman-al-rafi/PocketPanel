@@ -592,7 +592,8 @@ commit `773e6b3`). Device verification of the hardware card pending.
 ---
 
 ## M8 — Optional Shizuku Integration
-Status: [ ] Not started
+Status: [~] Started 2026-11-27. Shizuku API 13.1.5 and the UserService
+path verified; implementation pending CI and device verification.
 
 ### Objectives
 - Research supported Shizuku APIs.

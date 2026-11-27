@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import dev.pocketpanel.elevated.ShizukuStatus
 import dev.pocketpanel.settings.ThemeMode
 import dev.pocketpanel.ui.main.MainScreen
 import dev.pocketpanel.ui.settings.SettingsScreen
@@ -29,6 +30,8 @@ fun PocketPanelApp(
     onVpnDisconnect: () -> Unit,
     onVpnRemove: () -> Unit,
     onVpnDismissMessage: () -> Unit,
+    shizukuStatus: ShizukuStatus,
+    onRequestShizukuPermission: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -52,6 +55,8 @@ fun PocketPanelApp(
                 onVpnDisconnect = onVpnDisconnect,
                 onVpnRemove = onVpnRemove,
                 onVpnDismissMessage = onVpnDismissMessage,
+                shizukuStatus = shizukuStatus,
+                onRequestShizukuPermission = onRequestShizukuPermission,
             )
 
             AppScreen.Settings -> {

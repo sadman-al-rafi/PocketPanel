@@ -71,6 +71,11 @@ required_files=(
     "app/src/main/java/dev/pocketpanel/system/HardwareSnapshot.kt"
     "app/src/test/java/dev/pocketpanel/system/ThermalInfoTest.kt"
     "app/src/main/java/dev/pocketpanel/ui/main/HardwareCard.kt"
+    "app/src/main/aidl/dev/pocketpanel/elevated/IHardwareService.aidl"
+    "app/src/main/java/dev/pocketpanel/elevated/HardwareUserService.kt"
+    "app/src/main/java/dev/pocketpanel/elevated/ShizukuCapability.kt"
+    "app/src/main/java/dev/pocketpanel/elevated/ElevatedModels.kt"
+    "app/src/main/java/dev/pocketpanel/elevated/ShizukuHardwareAccess.kt"
     "app/src/main/res/drawable/ic_notification.xml"
     "app/src/main/res/values/strings.xml"
     "app/src/main/res/values/themes.xml"
@@ -231,6 +236,7 @@ android.permission.FOREGROUND_SERVICE_SPECIAL_USE
 android.permission.POST_NOTIFICATIONS
 android.permission.ACCESS_NETWORK_STATE
 android.permission.INTERNET
+android.permission.INTERACT_ACROSS_USERS_FULL
 "
 declared_permissions=$(grep -oE 'android\.permission\.[A-Z_]+' "$manifest" | sort -u)
 for permission in $declared_permissions; do
@@ -367,6 +373,49 @@ if grep -q 'hardware_thermal_unsupported' "$hardware_card" \
     ok
 else
     fail "hardware card does not label unsupported metrics"
+fi
+
+# --- Elevated access --------------------------------------------------------
+
+section "Elevated access"
+
+shizuku_capability=app/src/main/java/dev/pocketpanel/elevated/ShizukuCapability.kt
+
+if grep -q 'module = "dev.rikka.shizuku:api"' gradle/libs.versions.toml \
+    && grep -q 'module = "dev.rikka.shizuku:provider"' gradle/libs.versions.toml \
+    && grep -q 'libs.shizuku.api' app/build.gradle.kts \
+    && grep -q 'libs.shizuku.provider' app/build.gradle.kts; then
+    ok
+else
+    fail "Shizuku API and provider dependencies are not declared"
+fi
+
+if grep -q 'rikka.shizuku.ShizukuProvider' "$manifest" \
+    && grep -q 'INTERACT_ACROSS_USERS_FULL' "$manifest"; then
+    ok
+else
+    fail "Shizuku provider is missing from the manifest"
+fi
+
+if grep -q 'destroy() = 16777114' \
+    app/src/main/aidl/dev/pocketpanel/elevated/IHardwareService.aidl; then
+    ok
+else
+    fail "user service AIDL is missing the Shizuku destroy transaction"
+fi
+
+if grep -q 'checkSelfPermission' "$shizuku_capability" \
+    && grep -q 'requestPermission' "$shizuku_capability"; then
+    ok
+else
+    fail "Shizuku capability does not detect and request permission"
+fi
+
+if grep -q 'elevatedAccess?.snapshot()' \
+    app/src/main/java/dev/pocketpanel/system/SystemInfoRepository.kt; then
+    ok
+else
+    fail "elevated readings are not wired into monitoring"
 fi
 
 # --- VPN wiring -------------------------------------------------------------

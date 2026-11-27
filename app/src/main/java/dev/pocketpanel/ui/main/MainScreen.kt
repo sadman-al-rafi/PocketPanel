@@ -35,6 +35,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.pocketpanel.R
+import dev.pocketpanel.elevated.ShizukuStatus
 import dev.pocketpanel.settings.UserPreferences
 import dev.pocketpanel.system.DeviceInfo
 import dev.pocketpanel.system.NetworkInfo
@@ -64,6 +65,8 @@ fun MainScreen(
     onVpnDisconnect: () -> Unit = {},
     onVpnRemove: () -> Unit = {},
     onVpnDismissMessage: () -> Unit = {},
+    shizukuStatus: ShizukuStatus = ShizukuStatus.Unavailable,
+    onRequestShizukuPermission: () -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -125,7 +128,11 @@ fun MainScreen(
                         onRemove = onVpnRemove,
                         onDismissMessage = onVpnDismissMessage,
                     )
-                    HardwareCard(deviceInfo = deviceInfo)
+                    HardwareCard(
+                        deviceInfo = deviceInfo,
+                        shizukuStatus = shizukuStatus,
+                        onRequestShizukuPermission = onRequestShizukuPermission,
+                    )
                 }
             }
         }

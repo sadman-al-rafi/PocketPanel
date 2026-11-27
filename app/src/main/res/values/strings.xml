@@ -147,4 +147,19 @@
     <string name="thermal_emergency">Emergency</string>
     <string name="thermal_shutdown">Shutdown</string>
     <string name="thermal_unknown">Unknown</string>
+
+    <!-- M8 optional elevated access -->
+    <string name="hardware_soc_temperature">SoC temperature</string>
+    <string name="hardware_soc_temperature_value">%1$.1f °C (%2$s)</string>
+    <string name="hardware_gpu_busy">GPU load (driver)</string>
+    <string name="hardware_gpu_clock">GPU clock</string>
+    <string name="hardware_gpu_clock_value">%1$d MHz</string>
+    <string name="hardware_driver_note">Driver readings are device-specific and may be unavailable.</string>
+    <string name="hardware_shizuku">Elevated access (Shizuku)</string>
+    <string name="hardware_shizuku_unavailable">Not detected</string>
+    <string name="hardware_shizuku_permission">Permission needed</string>
+    <string name="hardware_shizuku_granted">Active</string>
+    <string name="hardware_shizuku_explanation">Shizuku is detected. Grant access to read real CPU counters, SoC temperature and driver GPU values. Standard readings keep working without it.</string>
+    <string name="hardware_shizuku_grant">Grant access</string>
+    <string name="hardware_shizuku_active">Real CPU counters and driver readings replace estimates when available.</string>
 </resources>
