@@ -409,11 +409,11 @@ Manual device verification (user-reported, pending):
 
 ## 14. Customization Verification (M10)
 
-Automated (executed after CI):
-- Build, lint and JVM tests for the new settings enums and the overlay
-  wiring; record the run ID and commit.
-- `scripts/check-static.sh` covers persisted keys, settings options, the
-  consent Activity and the shared VPN state.
+Automated (executed):
+- CI run `46008800467` (run 37, commit `dd9ba0e`) passed build, lint and
+  50/50 JVM tests, including 2 new preference-enum cases.
+- `scripts/check-static.sh`: 109/109 checks, covering persisted keys,
+  settings options, the consent Activity and the shared VPN state.
 
 Manual device verification (user-reported, pending):
 - Each main-screen layout preset shows the expected cards and persists

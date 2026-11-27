@@ -592,8 +592,8 @@ commit `773e6b3`). Device verification of the hardware card pending.
 ---
 
 ## M10 — Customization and Polish
-Status: [~] Started 2026-11-27. Implementation pending CI and device
-verification.
+Status: [✓] Implemented and build verified 2026-11-27 (CI run 37,
+commit `dd9ba0e`). Device verification pending.
 
 ### Objectives
 - Panel customization.
@@ -637,6 +637,19 @@ verification.
 - CI build, lint and JVM tests; record the run ID and commit.
 - Device verification: layout presets, handle size/edge, settings
   persistence, and overlay connect/disconnect with consent.
+
+### Verification Record
+- CI run `46008800467` (run 37, commit `dd9ba0e`): `assembleDebug`,
+  `lintDebug` and `testDebugUnitTest` succeeded.
+- 50/50 JVM tests passed, including 2 new preference-enum cases.
+- Lint: 0 errors, 5 pre-existing warnings. An extra `UnusedResources`
+  warning in run 36 was fixed by removing the obsolete overlay body
+  string.
+- Debug APK: 28,038,751 bytes; sha256
+  `f85b0c6973663fcad9022ebdf34e971460f66af3803d074261c02eaab5adc08a`.
+- `scripts/check-static.sh`: 109/109 checks.
+- Not verified: settings persistence on a device, overlay consent flow
+  and resizing behaviour.
 
 ---
 

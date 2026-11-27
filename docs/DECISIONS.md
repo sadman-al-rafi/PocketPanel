@@ -1222,3 +1222,10 @@ consent. Starting an Activity from a service is subject to Android's
 background-start restrictions; the visible overlay is the mitigating
 condition, and device verification is required. Performance is unchanged
 because the overlay adds no polling loop.
+
+Verification: CI run `46008800467` (run 37, commit `dd9ba0e`) passed build,
+lint (0 errors, 5 pre-existing warnings) and 50/50 JVM tests. The debug
+APK is 28,038,751 bytes (sha256
+`f85b0c6973663fcad9022ebdf34e971460f66af3803d074261c02eaab5adc08a`).
+`scripts/check-static.sh` passes 109/109 checks. The overlay consent flow
+still needs device verification.
