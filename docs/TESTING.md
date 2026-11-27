@@ -295,10 +295,8 @@ Specific checks:
 - Battery: level, status, temperature and voltage match system
   settings/info; properties returning `Integer.MIN_VALUE` show as
   unavailable.
-- Thermal: status enum shown only on API 29+; below that the card says
-  "Not supported on this Android version". Headroom (API 30+) is a
-  fraction, with 1.00 meaning severe throttling; NaN shows "Not
-  available". Status is never presented as a temperature.
+- Thermal status and headroom are not part of the app; only battery
+  temperature is shown.
 - GPU: renderer, vendor and OpenGL ES strings are shown when the EGL
   context can be created; otherwise "Not available". Utilization and
   FPS are never displayed.
@@ -320,11 +318,11 @@ When device testing resumes, run the smoke suite on at least:
 | API level | Why |
 |---|---|
 | 26 | Minimum supported; overlay baseline |
-| 29 | Thermal status becomes available |
-| 30 | Thermal headroom becomes available |
+| 29 | Runtime permission behavior |
+| 30 | Overlay and VPN behavior on newer frameworks |
 | 34 | Mandatory foreground service types |
-| 35 | Headroom thresholds; overlay FGS start rule change |
-| 36 | Target SDK behavior; headroom listeners |
+| 35 | Overlay FGS start rule change |
+| 36 | Target SDK behavior |
 
 `minSdk` behavior must also be checked by code review for every call to
 an API newer than 26.
@@ -394,33 +392,40 @@ Manual device verification (user-reported):
 
 Automated (executed):
 - CI run `45966560679` (run 28, commit `773e6b3`) passed build, lint and
-  48/48 JVM tests, including 3 `ThermalInfoTest` mapping cases.
+  48/48 JVM tests. Three thermal mapping cases existed at that time and
+  were removed with the feature.
 - `scripts/check-static.sh`: 101/101 checks.
 
 Manual device verification (user-reported, pending):
 - The advanced hardware card shows a GPU renderer, vendor and OpenGL ES
   version where an EGL context can be created.
 - No GPU utilization percentage or FPS value is shown anywhere.
-- On API 26-28 the thermal status row says "Not supported on this
-  Android version"; on API 29+ it shows a coarse status label; on API
-  30+ it also shows a headroom fraction.
 - With monitoring off, the card states that monitoring must be enabled.
 - Standard mode still works with no Shizuku or root setup.
 
 ## 14. Customization Verification (M10)
 
-Automated (executed):
+Automated (executed for the earlier M10 state):
 - CI run `46008800467` (run 37, commit `dd9ba0e`) passed build, lint and
   50/50 JVM tests, including 2 new preference-enum cases.
-- `scripts/check-static.sh`: 109/109 checks, covering persisted keys,
-  settings options, the consent Activity and the shared VPN state.
+- `scripts/check-static.sh`: 109/109 checks at that point.
+
+Automated (pending for the current follow-up):
+- Build, lint and JVM tests after the home-screen and overlay-monitoring
+  changes, including 2 new `MemoryUsageTest` cases.
+- Static checks cover the 2x2 grid, monitoring gating and thermal removal.
 
 Manual device verification (user-reported, pending):
-- Each main-screen layout preset shows the expected cards and persists
-  after a process restart.
-- Compact and normal handle sizes resize the handle and panel; changing
-  the edge moves the handle without resetting its vertical position.
-- Monitoring enable/interval changes in settings are saved.
+- The home screen starts with the always-visible floating-panel switch;
+  there is no welcome card and no appearance card.
+- Each layout preset (standard/focus) shows the expected optional cards
+  and persists after a process restart.
+- Compact and normal handle sizes resize the handle and panel; dragging
+  follows the finger smoothly; changing the edge keeps the vertical
+  position.
+- The overlay 2x2 grid shows CPU %, battery temperature, memory % and
+  ping only while monitoring is active, and is hidden when it is off.
+- No thermal status or thermal load row appears anywhere.
 - The overlay VPN row shows the real connection state. First connect
   opens the system consent dialog; denial leaves it disconnected; a
   granted consent starts the tunnel; disconnect works from the overlay.

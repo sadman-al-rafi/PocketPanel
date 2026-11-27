@@ -18,11 +18,6 @@
     <string name="dynamic_color_description">Use colors derived from your wallpaper</string>
     <string name="dynamic_color_unavailable">Requires Android 12 or later</string>
 
-    <string name="main_welcome_title">Welcome to PocketPanel</string>
-    <string name="main_welcome_body">System monitoring and network controls, one gesture away.</string>
-    <string name="main_foundation_note">This build includes the floating handle and basic system monitoring.</string>
-    <string name="current_appearance">Current appearance</string>
-    <string name="change_in_settings">Change in settings</string>
 
     <string name="on">On</string>
     <string name="off">Off</string>
@@ -133,28 +128,13 @@
     <string name="hardware_gpu_vendor">GPU vendor</string>
     <string name="hardware_opengl_es">OpenGL ES</string>
     <string name="hardware_gpu_note">GPU utilization and FPS are not available through public Android APIs.</string>
-    <string name="hardware_thermal_status">Thermal status</string>
-    <string name="hardware_thermal_headroom">Thermal load (headroom)</string>
-    <string name="hardware_thermal_headroom_value">%1$.2f (1.00 = severe throttling)</string>
-    <string name="hardware_thermal_note">Thermal status is a coarse throttling state, not a temperature.</string>
-    <string name="hardware_thermal_unsupported">Not supported on this Android version</string>
-    <string name="thermal_none">None</string>
-    <string name="thermal_light">Light</string>
-    <string name="thermal_moderate">Moderate</string>
-    <string name="thermal_severe">Severe</string>
-    <string name="thermal_critical">Critical</string>
-    <string name="thermal_emergency">Emergency</string>
-    <string name="thermal_shutdown">Shutdown</string>
-    <string name="thermal_unknown">Unknown</string>
 
     <!-- M10 customization -->
     <string name="settings_main_screen">Main screen</string>
     <string name="layout_standard">Standard</string>
-    <string name="layout_standard_description">Show every card</string>
+    <string name="layout_standard_description">Monitoring, hardware and VPN</string>
     <string name="layout_focus">Focus</string>
-    <string name="layout_focus_description">Monitoring, VPN and hardware</string>
-    <string name="layout_minimal">Minimal</string>
-    <string name="layout_minimal_description">VPN and appearance only</string>
+    <string name="layout_focus_description">Monitoring and VPN only</string>
     <string name="settings_handle">Floating handle</string>
     <string name="handle_size_compact">Compact</string>
     <string name="handle_size_compact_description">Smaller handle and panel</string>
@@ -168,4 +148,8 @@
     <string name="overlay_vpn_disconnect">Disconnect VPN</string>
     <string name="overlay_vpn_no_profile">Import a configuration in the app first.</string>
     <string name="overlay_vpn_permission_needed">VPN permission is needed. Tap Connect and allow it.</string>
+    <string name="overlay_metric_cpu">CPU</string>
+    <string name="overlay_metric_battery">Battery</string>
+    <string name="overlay_metric_memory">Memory</string>
+    <string name="overlay_metric_ping">Ping</string>
 </resources>

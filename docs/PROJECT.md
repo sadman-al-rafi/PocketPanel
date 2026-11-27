@@ -28,7 +28,7 @@ The user can dismiss the panel without switching applications.
 - CPU usage.
 - RAM usage.
 - Battery information.
-- Thermal information where supported.
+- Battery temperature where supported.
 - GPU information where supported.
 - Network throughput.
 - Additional supported metrics in future milestones.

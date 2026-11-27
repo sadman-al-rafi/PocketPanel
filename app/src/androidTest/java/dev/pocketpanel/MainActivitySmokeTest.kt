@@ -25,7 +25,7 @@ class MainActivitySmokeTest {
     fun launchesAndShowsMainScreen() {
         composeRule.onNodeWithText(composeRule.activity.getString(R.string.app_name))
             .assertIsDisplayed()
-        composeRule.onNodeWithText(composeRule.activity.getString(R.string.main_welcome_title))
+        composeRule.onNodeWithText(composeRule.activity.getString(R.string.overlay))
             .assertIsDisplayed()
     }
 
@@ -41,9 +41,7 @@ class MainActivitySmokeTest {
     }
 
     @Test
-    fun selectingDarkPersistsAndUpdatesTheMainScreenSummary() {
-        val darkLabel = composeRule.activity.getString(R.string.theme_dark)
-
+    fun selectingDarkPersistsAfterLeavingSettings() {
         openSettings()
         composeRule.onNodeWithTag(TestTags.THEME_DARK).performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
@@ -57,10 +55,16 @@ class MainActivitySmokeTest {
         composeRule.onNodeWithContentDescription(composeRule.activity.getString(R.string.back))
             .performClick()
 
+        // The appearance summary is no longer on the home screen; verify
+        // persistence by reopening settings instead.
+        openSettings()
         composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodesWithText(darkLabel).fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodesWithTag(TestTags.THEME_DARK)
+                .fetchSemanticsNodes()
+                .any { node ->
+                    node.config.getOrNull(SemanticsProperties.Selected) == true
+                }
         }
-        composeRule.onNodeWithText(darkLabel).assertIsDisplayed()
     }
 
     private fun openSettings() {

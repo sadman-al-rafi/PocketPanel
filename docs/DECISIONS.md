@@ -1099,14 +1099,13 @@ new checks for the fallback and the estimate label. CI run
 The CPU row was later confirmed working on a test device by the project
 owner.
 
-### D026 — GPU and Thermal Sources
+### D026 — GPU Identity Source
 
 Date: 2026-11-27
-Status: Accepted.
+Status: Accepted, with thermal readings removed in an M10 follow-up.
 
-Context: M7 requires GPU information where supported and additional
-hardware metrics. The project forbids fabricated GPU, temperature and FPS
-readings (D009).
+Context: M7 required GPU information where supported. The project forbids
+fabricated GPU, temperature and FPS readings (D009).
 
 Decision:
 - Do not report GPU utilization or FPS. Android has no public API for
@@ -1116,16 +1115,10 @@ Decision:
   1x1 pbuffer EGL context, query `GL_RENDERER`, `GL_VENDOR` and
   `GL_VERSION`, then release the context. Cache the result, including
   failure, so unsupported devices do not retry on every tick.
-- Read thermal status with `PowerManager.getCurrentThermalStatus()` on
-  API 29+, and thermal headroom with `getThermalHeadroom(0)` on API 30+.
-  Treat NaN and exceptions as unavailable.
-- Label thermal status as a coarse throttling state, never as a
-  temperature. Show "Not supported on this Android version" below the
-  owning API level and "Not available" when a call yields no value.
-- Do not sample `getThermalHeadroom` faster than about once per second;
-  the existing 1-10 second monitoring interval satisfies this.
-- Defer the API 36 headroom listener and API 35 threshold map: they add
-  callback lifecycle complexity without a new user-visible reading.
+- Thermal status and headroom were implemented from `PowerManager` in
+  M7 but were removed completely in the M10 follow-up at the project
+  owner's request. No thermal API is used; battery temperature remains
+  the only temperature reading.
 
 Alternatives considered:
 - Vendor GPU sysfs nodes: rejected; unreadable to apps and not an SDK
@@ -1136,9 +1129,8 @@ Alternatives considered:
 - Reporting `getBatteryDischargePrediction()` as a hardware reading:
   deferred; it is a time estimate, not a hardware measurement.
 
-Compatibility notes: `EGL14` is API 17+, `GLES20` is API 8+, thermal
-status is API 29+ and thermal headroom is API 30+. No new permission or
-dependency is needed.
+Compatibility notes: `EGL14` is API 17+ and `GLES20` is API 8+. No new
+permission or dependency is needed.
 
 Verified sources (checked 2026-11-27):
 - https://developer.android.com/reference/android/opengl/GLES20
@@ -1147,7 +1139,8 @@ Verified sources (checked 2026-11-27):
 
 Verification: CI run `45966560679` (run 28, commit `773e6b3`) passed
 build, lint (0 errors, 5 pre-existing warnings) and 48/48 JVM tests,
-including 3 new `ThermalInfoTest` cases. The debug APK is 28,014,367
+including 3 thermal mapping cases that were later removed with that
+feature. The debug APK was 28,014,367
 bytes (sha256 `0eee340d44ca4a33f2c61644c7bccc80658b41a06252d2c3f55a640c7cf6552f`).
 `scripts/check-static.sh` passes 101/101 checks. Device behavior is
 still unverified.
@@ -1229,3 +1222,44 @@ APK is 28,038,751 bytes (sha256
 `f85b0c6973663fcad9022ebdf34e971460f66af3803d074261c02eaab5adc08a`).
 `scripts/check-static.sh` passes 109/109 checks. The overlay consent flow
 still needs device verification.
+
+### D030 — Home Screen and Overlay Panel Follow-up
+
+Date: 2026-11-27
+Status: Accepted.
+
+Context: The project owner requested seven focused changes after M10:
+remove the home appearance section, move four readings into a 2x2 overlay
+grid, smooth drag, always show the floating-panel switch, drop the minimal
+layout, remove thermal rows and replace the welcome section.
+
+Decision:
+- The home screen now starts with the always-visible overlay switch. The
+  welcome and appearance cards are gone; appearance is configured only
+  in settings. This also fills the slot previously called "welcome".
+- `MainCardLayout` has only STANDARD and FOCUS. STANDARD adds the GPU
+  hardware card; FOCUS keeps monitoring and VPN. Unknown stored values
+  fall back to STANDARD.
+- The overlay panel shows CPU %, battery temperature, memory % and ping
+  in a 2x2 grid only while monitoring is enabled. `OverlayService` starts
+  a sampling job on the existing interval and cancels it when monitoring
+  is off, so no extra loop runs by default.
+- Memory usage is derived from `ActivityManager.MemoryInfo` totals via a
+  pure `MemoryUsage.usedPercent` helper with tests; unusable snapshots
+  show "Not available".
+- Drag deltas are computed from window offsets just written by
+  `updateViewLayout` rather than a possibly stale `getLocationOnScreen`,
+  reducing stepwise movement.
+- Thermal status and thermal headroom, their provider, tests, strings
+  and device-info fields were deleted. Battery temperature is retained.
+
+Alternatives considered:
+- Per-card visibility switches: rejected; the two layout presets cover
+  customization with less saved state.
+- Keeping thermal rows hidden behind a setting: rejected; the owner
+  asked for complete removal.
+
+Consequences: the expanded overlay is taller to fit the grid. The panel
+runs two monitoring flows only while the user has monitoring enabled and
+the overlay is attached; all sampling stops with the service. Device
+verification is still required.

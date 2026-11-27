@@ -17,8 +17,9 @@ class SettingsEnumsTest {
     @Test
     fun mainCardLayoutFallsBackToStandard() {
         assertEquals(MainCardLayout.FOCUS, MainCardLayout.fromStorage("FOCUS"))
-        assertEquals(MainCardLayout.MINIMAL, MainCardLayout.fromStorage("MINIMAL"))
+        assertEquals(MainCardLayout.STANDARD, MainCardLayout.fromStorage("STANDARD"))
         assertEquals(MainCardLayout.STANDARD, MainCardLayout.fromStorage(null))
+        assertEquals(MainCardLayout.STANDARD, MainCardLayout.fromStorage("MINIMAL"))
         assertEquals(MainCardLayout.STANDARD, MainCardLayout.fromStorage("unknown"))
     }
 }

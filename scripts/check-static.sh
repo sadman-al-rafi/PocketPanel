@@ -71,9 +71,10 @@ required_files=(
     "app/src/test/java/dev/pocketpanel/system/CpuUsageMathTest.kt"
     "app/src/main/java/dev/pocketpanel/system/GpuInfo.kt"
     "app/src/main/java/dev/pocketpanel/system/GpuInfoProvider.kt"
-    "app/src/main/java/dev/pocketpanel/system/ThermalInfo.kt"
     "app/src/main/java/dev/pocketpanel/system/HardwareSnapshot.kt"
-    "app/src/test/java/dev/pocketpanel/system/ThermalInfoTest.kt"
+    "app/src/main/java/dev/pocketpanel/system/MemoryUsage.kt"
+    "app/src/test/java/dev/pocketpanel/system/MemoryUsageTest.kt"
+    "app/src/main/java/dev/pocketpanel/overlay/OverlayMonitoring.kt"
     "app/src/main/java/dev/pocketpanel/ui/main/HardwareCard.kt"
     "app/src/main/res/drawable/ic_notification.xml"
     "app/src/main/res/values/strings.xml"
@@ -388,8 +389,8 @@ fi
 section "Advanced metrics"
 
 gpu_provider=app/src/main/java/dev/pocketpanel/system/GpuInfoProvider.kt
-thermal_source=app/src/main/java/dev/pocketpanel/system/ThermalInfo.kt
 hardware_card=app/src/main/java/dev/pocketpanel/ui/main/HardwareCard.kt
+overlay_content=app/src/main/java/dev/pocketpanel/overlay/OverlayContent.kt
 
 if grep -q 'GLES20.glGetString' "$gpu_provider" \
     && grep -q 'eglDestroyContext' "$gpu_provider"; then
@@ -398,18 +399,27 @@ else
     fail "GPU identity provider is missing or does not release its EGL context"
 fi
 
-if grep -q 'getThermalHeadroom' "$thermal_source" \
-    && grep -q 'Build.VERSION_CODES.R' "$thermal_source"; then
+if grep -q 'hardware_gpu_note' "$hardware_card" \
+    && ! grep -rq 'ThermalLevel\|getThermalHeadroom' app/src/main/java; then
     ok
 else
-    fail "thermal provider is missing or does not gate the headroom API"
+    fail "hardware card or thermal removal is incomplete"
 fi
 
-if grep -q 'hardware_thermal_unsupported' "$hardware_card" \
-    && grep -q 'hardware_gpu_note' "$hardware_card"; then
+if grep -q 'overlay_metric_cpu' "$overlay_content" \
+    && grep -q 'overlay_metric_ping' "$overlay_content" \
+    && grep -q 'MemoryUsage.usedPercent' "$overlay_content"; then
     ok
 else
-    fail "hardware card does not label unsupported metrics"
+    fail "overlay 2x2 monitoring grid is incomplete"
+fi
+
+overlay_service=app/src/main/java/dev/pocketpanel/overlay/OverlayService.kt
+if grep -q 'restartMonitoring' "$overlay_service" \
+    && grep -q 'if (!preferences.monitoringEnabled)' "$overlay_service"; then
+    ok
+else
+    fail "overlay monitoring is not gated by the monitoring setting"
 fi
 
 # --- VPN wiring -------------------------------------------------------------

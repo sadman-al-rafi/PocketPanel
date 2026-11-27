@@ -21,7 +21,6 @@ object TestTags {
     const val SETTINGS_MONITORING_SWITCH = "settings_monitoring_switch"
     const val LAYOUT_STANDARD = "layout_standard"
     const val LAYOUT_FOCUS = "layout_focus"
-    const val LAYOUT_MINIMAL = "layout_minimal"
     const val HANDLE_SIZE_COMPACT = "handle_size_compact"
     const val HANDLE_SIZE_NORMAL = "handle_size_normal"
     const val HANDLE_EDGE_LEFT = "handle_edge_left"

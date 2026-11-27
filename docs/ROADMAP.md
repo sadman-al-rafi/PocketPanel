@@ -341,7 +341,7 @@ temperature is implemented through the M3 monitoring pipeline and run
 remains unverified because no device test is authorized (D016).
 
 ### Objectives
-- Discover available thermal information.
+- Discover available temperature information.
 - Identify supported temperature sources.
 - Implement capability detection.
 - Provide clear unsupported states.
@@ -539,23 +539,19 @@ commit `773e6b3`). Device verification of the hardware card pending.
 - `system/GpuInfoProvider.kt`: reads `GL_RENDERER`, `GL_VENDOR` and
   `GL_VERSION` from a short-lived, off-screen EGL context and caches the
   result. The context is always released.
-- `system/ThermalProvider.kt` and `ThermalInfo.kt`: real thermal status
-  (API 29+) and headroom (API 30+) from `PowerManager`, with API gating.
 - `HardwareSnapshot` plus extended `DeviceInfo` for the new readings.
-- `ui/main/HardwareCard.kt` showing GPU identity and thermal readings,
-  explicit unsupported states, and a note that GPU utilization and FPS
-  are not available.
-- JVM tests for thermal-status mapping and documentation of the
-  Shizuku evaluation (D027).
+- `ui/main/HardwareCard.kt` showing GPU identity, an explicit unsupported
+  state, and a note that GPU utilization and FPS are not available.
+- Documentation of the Shizuku evaluation (D027).
+- `PowerManager` thermal status/headroom were implemented in M7 but were
+  removed in the M10 follow-up; they are no longer part of the app.
 
 ### Acceptance Criteria
 - [ ] Supported readings are real: GPU identity comes from OpenGL ES
-      strings; thermal values come from `PowerManager`. No percentage is
-      inferred from a name or a vendor string.
-- [ ] Unsupported readings are clearly identified: API levels below 29
-      and 30 show "Not supported on this Android version"; unreadable
-      values show "Not available". GPU utilization and FPS are never
-      displayed.
+      strings. No percentage is inferred from a name or a vendor string.
+- [ ] Unsupported readings are clearly identified: an unreadable GPU
+      identity shows "Not available". GPU utilization and FPS are never
+      displayed. Thermal status/headroom are not displayed.
 - [ ] No elevated access is used: M7 adds no Shizuku or root path; all
       readings come from standard APIs (D027).
 - [ ] Standard mode remains functional with no new permission and no
@@ -566,20 +562,20 @@ commit `773e6b3`). Device verification of the hardware card pending.
 ### Verification Record
 - CI run `45966560679` (run 28, commit `773e6b3`): `assembleDebug`,
   `lintDebug` and `testDebugUnitTest` succeeded.
-- 48/48 JVM tests passed, including 3 new `ThermalInfoTest` cases.
+- 48/48 JVM tests passed at verification time (3 thermal mapping cases
+  were included then and were removed with that feature).
 - Lint: 0 errors, 5 pre-existing warnings.
 - Debug APK: 28,014,367 bytes; sha256
   `0eee340d44ca4a33f2c61644c7bccc80658b41a06252d2c3f55a640c7cf6552f`.
 - `scripts/check-static.sh`: 101/101 checks before the push.
-- Not verified: GPU identity strings, thermal readings and the
-  unsupported-state labels on a device. These need device verification.
+- Not verified: GPU identity strings and the unsupported-state label on a
+  device. These need device verification.
 
 ### Technology Validation
 - Android has no public API for GPU utilization or FPS. The documented
   EGL/OpenGL ES string queries are identity information only (D026).
-- `PowerManager.getCurrentThermalStatus()` is API 29;
-  `getThermalHeadroom(int)` is API 30 and returns NaN when unsupported;
-  the listener is API 36. Only the first two are sampled in M7 (D026).
+- `PowerManager` thermal APIs were evaluated in M7 but removed in the
+  M10 follow-up at the project owner's request; no thermal API is used.
 - All new APIs come from the Android SDK. The toolchain is unchanged:
   Gradle 9.6.0, AGP 9.5.2, Kotlin 2.4.21, compileSdk 37.1, minSdk 26.
 
@@ -592,8 +588,9 @@ commit `773e6b3`). Device verification of the hardware card pending.
 ---
 
 ## M10 — Customization and Polish
-Status: [✓] Implemented and build verified 2026-11-27 (CI run 37,
-commit `dd9ba0e`). Device verification pending.
+Status: [~] Follow-up changes in progress 2026-11-27. CI run 37 verified
+the earlier M10 state; the home-screen, overlay-monitoring and thermal
+removal changes below still need verification.
 
 ### Objectives
 - Panel customization.
@@ -606,13 +603,20 @@ commit `dd9ba0e`). Device verification pending.
 
 ### Deliverables
 - Persisted `HandleSize` (compact/normal) and `MainCardLayout`
-  (standard/focus/minimal) preferences in DataStore.
+  (standard/focus) preferences in DataStore.
 - Settings screen sections for main-screen layout, handle size, handle
   edge and monitoring enable/interval.
-- Main screen filters cards according to the selected layout.
-- Overlay panel shows the shared VPN state and a connect/disconnect
-  button. Consent is requested by `VpnToggleActivity`, which is launched
-  from the overlay and finishes after the system result.
+- Main screen starts with the always-visible floating-panel switch; the
+  welcome and appearance cards were removed. Appearance options live only
+  in settings. The `MINIMAL` layout preset was removed.
+- Overlay panel shows a 2x2 grid (CPU %, battery temperature, memory %,
+  ping) only while monitoring is active, followed by the shared VPN
+  status and connect/disconnect button. Consent is requested by
+  `VpnToggleActivity`, launched from the overlay and finished after the
+  system result.
+- Dragging uses the window offsets just written instead of a possibly
+  stale `getLocationOnScreen` value, for smoother movement.
+- `PowerManager` thermal status and headroom were removed completely.
 - Overlay window resizes when the handle size or edge changes.
 - JVM tests for the new preference enums.
 - Documentation and verification record.
@@ -624,9 +628,9 @@ commit `dd9ba0e`). Device verification pending.
 - [ ] Accessibility reviewed: overlay VPN button has a 48dp minimum
       height, settings options are 64dp rows with radio/switch roles,
       and the handle keeps its content description.
-- [ ] Performance reviewed: monitoring is sampled only while the app UI
-      observes it; the overlay observes only settings and VPN state and
-      does not start a separate polling loop.
+- [ ] Performance reviewed: monitoring is sampled only while enabled;
+      the overlay starts its sampling job only while monitoring is active
+      and the panel service is attached.
 - [ ] VPN control from the overlay reflects the real tunnel state and
       respects system consent: consent is launched for result before the
       first connect, and denial leaves the UI disconnected.
@@ -636,9 +640,13 @@ commit `dd9ba0e`). Device verification pending.
 - Local static checks before pushing.
 - CI build, lint and JVM tests; record the run ID and commit.
 - Device verification: layout presets, handle size/edge, settings
-  persistence, and overlay connect/disconnect with consent.
+  persistence, overlay 2x2 grid, smooth dragging and overlay
+  connect/disconnect with consent.
 
 ### Verification Record
+The run below verified the M10 state before the home-screen and overlay
+monitoring follow-up; the current tree still needs its own CI run.
+
 - CI run `46008800467` (run 37, commit `dd9ba0e`): `assembleDebug`,
   `lintDebug` and `testDebugUnitTest` succeeded.
 - 50/50 JVM tests passed, including 2 new preference-enum cases.

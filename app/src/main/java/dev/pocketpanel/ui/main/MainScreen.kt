@@ -43,8 +43,6 @@ import dev.pocketpanel.system.NetworkTransport
 import dev.pocketpanel.system.PING_HOST
 import dev.pocketpanel.ui.TestTags
 import dev.pocketpanel.ui.VpnUiState
-import dev.pocketpanel.ui.labelRes
-import dev.pocketpanel.ui.theme.isDynamicColorAvailable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,31 +97,21 @@ fun MainScreen(
                     modifier = Modifier.widthIn(max = 640.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    val layout = preferences.mainCardLayout
-                    if (layout == MainCardLayout.STANDARD) {
-                        WelcomeCard()
-                        OverlayCard(
-                            preferences = preferences,
-                            permissionGranted = overlayPermissionGranted,
-                            notificationPermissionGranted = notificationPermissionGranted,
-                            onOverlayEnabledChange = onOverlayEnabledChange,
-                            onRequestOverlayPermission = onRequestOverlayPermission,
-                        )
-                    }
-                    if (layout != MainCardLayout.FOCUS) {
-                        AppearanceCard(
-                            preferences = preferences,
-                            onOpenSettings = onOpenSettings,
-                        )
-                    }
-                    if (layout != MainCardLayout.MINIMAL) {
-                        MonitoringCard(
-                            preferences = preferences,
-                            deviceInfo = deviceInfo,
-                            networkInfo = networkInfo,
-                            onMonitoringEnabledChange = onMonitoringEnabledChange,
-                            onMonitoringIntervalChange = onMonitoringIntervalChange,
-                        )
+                    OverlayCard(
+                        preferences = preferences,
+                        permissionGranted = overlayPermissionGranted,
+                        notificationPermissionGranted = notificationPermissionGranted,
+                        onOverlayEnabledChange = onOverlayEnabledChange,
+                        onRequestOverlayPermission = onRequestOverlayPermission,
+                    )
+                    MonitoringCard(
+                        preferences = preferences,
+                        deviceInfo = deviceInfo,
+                        networkInfo = networkInfo,
+                        onMonitoringEnabledChange = onMonitoringEnabledChange,
+                        onMonitoringIntervalChange = onMonitoringIntervalChange,
+                    )
+                    if (preferences.mainCardLayout == MainCardLayout.STANDARD) {
                         HardwareCard(deviceInfo = deviceInfo)
                     }
                     VpnCard(
@@ -136,31 +124,6 @@ fun MainScreen(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun WelcomeCard() {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.main_welcome_title),
-                style = MaterialTheme.typography.headlineSmall,
-            )
-            Text(
-                text = stringResource(R.string.main_welcome_body),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-            Text(
-                text = stringResource(R.string.main_foundation_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
@@ -230,51 +193,6 @@ private fun OverlayCard(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun AppearanceCard(
-    preferences: UserPreferences,
-    onOpenSettings: () -> Unit,
-) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.current_appearance),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            AppearanceRow(
-                label = stringResource(R.string.theme),
-                value = stringResource(preferences.themeMode.labelRes()),
-            )
-            AppearanceRow(
-                label = stringResource(R.string.dynamic_color),
-                value = dynamicColorValue(preferences.dynamicColor),
-            )
-            TextButton(onClick = onOpenSettings) {
-                Text(text = stringResource(R.string.change_in_settings))
-            }
-        }
-    }
-}
-
-@Composable
-private fun AppearanceRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodyLarge)
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -516,13 +434,6 @@ private fun batteryHealthLabel(health: Int): String = when (health) {
         stringResource(R.string.monitoring_health_failure)
     BatteryManager.BATTERY_HEALTH_COLD -> stringResource(R.string.monitoring_health_cold)
     else -> stringResource(R.string.monitoring_health_unknown)
-}
-
-@Composable
-private fun dynamicColorValue(enabled: Boolean): String = when {
-    !isDynamicColorAvailable() -> stringResource(R.string.not_available)
-    enabled -> stringResource(R.string.on)
-    else -> stringResource(R.string.off)
 }
 
 private val MONITORING_INTERVALS = listOf(1, 2, 5, 10)

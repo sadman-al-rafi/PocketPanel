@@ -359,14 +359,12 @@ private fun SwitchRow(
 private fun MainCardLayout.labelRes(): Int = when (this) {
     MainCardLayout.STANDARD -> R.string.layout_standard
     MainCardLayout.FOCUS -> R.string.layout_focus
-    MainCardLayout.MINIMAL -> R.string.layout_minimal
 }
 
 @Composable
 private fun MainCardLayout.descriptionRes(): Int = when (this) {
     MainCardLayout.STANDARD -> R.string.layout_standard_description
     MainCardLayout.FOCUS -> R.string.layout_focus_description
-    MainCardLayout.MINIMAL -> R.string.layout_minimal_description
 }
 
 @Composable
@@ -397,7 +395,6 @@ private val MainCardLayout.testTag: String
     get() = when (this) {
         MainCardLayout.STANDARD -> TestTags.LAYOUT_STANDARD
         MainCardLayout.FOCUS -> TestTags.LAYOUT_FOCUS
-        MainCardLayout.MINIMAL -> TestTags.LAYOUT_MINIMAL
     }
 
 private val HandleSize.testTag: String

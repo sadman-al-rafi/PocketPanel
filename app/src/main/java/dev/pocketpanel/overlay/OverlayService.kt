@@ -20,10 +20,13 @@ import dev.pocketpanel.R
 import dev.pocketpanel.settings.HandleEdge
 import dev.pocketpanel.settings.SettingsRepository
 import dev.pocketpanel.settings.UserPreferences
+import dev.pocketpanel.system.NetworkMonitor
+import dev.pocketpanel.system.SystemInfoRepository
 import dev.pocketpanel.vpn.VpnRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collect
@@ -47,6 +50,9 @@ class OverlayService : Service() {
 
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var vpnRepository: VpnRepository
+    private val systemInfoRepository = SystemInfoRepository(this)
+    private val networkMonitor = NetworkMonitor(this)
+    private var monitoringJob: Job? = null
     private var controller: OverlayWindowController? = null
     private var starting = false
     private var lifecycleStarted = false
@@ -110,14 +116,20 @@ class OverlayService : Service() {
                 controller = newController
                 starting = false
                 try {
-                    combine(
-                        settingsRepository.preferences,
-                        vpnRepository.state,
-                        vpnRepository.profile,
-                    ) { preferences, vpnState, profile ->
-                        newController.update(preferences)
-                        newController.updateVpnState(vpnState, profile != null)
-                    }.collect()
+                    serviceScope.launch {
+                        settingsRepository.preferences.collect { preferences ->
+                            newController.update(preferences)
+                            restartMonitoring(newController, preferences)
+                        }
+                    }
+                    serviceScope.launch {
+                        combine(
+                            vpnRepository.state,
+                            vpnRepository.profile,
+                        ) { state, profile ->
+                            newController.updateVpnState(state, profile != null)
+                        }.collect()
+                    }
                 } catch (error: CancellationException) {
                     throw error
                 } catch (error: Exception) {
@@ -137,6 +149,8 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         isRunning = false
+        monitoringJob?.cancel()
+        monitoringJob = null
         serviceScope.cancel()
         controller?.hide()
         controller = null
@@ -148,6 +162,30 @@ class OverlayService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    /**
+     * Sampling starts only while monitoring is enabled and the overlay is
+     * attached, so the panel does not add a second always-on polling loop.
+     */
+    private fun restartMonitoring(
+        controller: OverlayWindowController,
+        preferences: UserPreferences,
+    ) {
+        monitoringJob?.cancel()
+        monitoringJob = null
+        if (!preferences.monitoringEnabled) {
+            controller.updateMonitoring(null)
+            return
+        }
+        val intervalMillis = preferences.monitoringIntervalSeconds * 1_000L
+        monitoringJob = serviceScope.launch {
+            combine(
+                systemInfoRepository.deviceInfoFlow(intervalMillis),
+                networkMonitor.networkInfoFlow(intervalMillis),
+            ) { device, network -> OverlayMonitoring(device, network) }
+                .collect { sample -> controller.updateMonitoring(sample) }
+        }
+    }
 
     private suspend fun readInitialPreferences(): UserPreferences = try {
         // DataStore's flow already maps I/O failures to defaults, so this

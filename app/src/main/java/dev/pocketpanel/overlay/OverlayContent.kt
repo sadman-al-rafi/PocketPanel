@@ -40,6 +40,7 @@ import dev.pocketpanel.R
 import dev.pocketpanel.settings.HandleEdge
 import dev.pocketpanel.settings.HandleSize
 import dev.pocketpanel.settings.UserPreferences
+import dev.pocketpanel.system.MemoryUsage
 import dev.pocketpanel.ui.TestTags
 import dev.pocketpanel.vpn.VpnConnectionState
 
@@ -56,8 +57,8 @@ data class OverlaySize(
 
 /** Fixed size presets; the user selects one in settings. */
 object OverlayDimensions {
-    val NORMAL = OverlaySize(48.dp, 96.dp, 272.dp, 224.dp)
-    val COMPACT = OverlaySize(40.dp, 80.dp, 232.dp, 200.dp)
+    val NORMAL = OverlaySize(48.dp, 96.dp, 272.dp, 312.dp)
+    val COMPACT = OverlaySize(40.dp, 80.dp, 232.dp, 288.dp)
 
     fun forSize(size: HandleSize): OverlaySize =
         if (size == HandleSize.COMPACT) COMPACT else NORMAL
@@ -76,6 +77,7 @@ fun OverlayContent(
     vpnState: VpnConnectionState,
     hasVpnProfile: Boolean,
     onVpnToggle: () -> Unit,
+    monitoring: OverlayMonitoring?,
 ) {
     val isLeft = preferences.handleEdge == HandleEdge.LEFT
     val size = OverlayDimensions.forSize(preferences.handleSize)
@@ -100,6 +102,7 @@ fun OverlayContent(
                         vpnState = vpnState,
                         hasVpnProfile = hasVpnProfile,
                         onVpnToggle = onVpnToggle,
+                        monitoring = monitoring,
                         onCollapse = onCollapse,
                     )
                 }
@@ -110,6 +113,7 @@ fun OverlayContent(
                         vpnState = vpnState,
                         hasVpnProfile = hasVpnProfile,
                         onVpnToggle = onVpnToggle,
+                        monitoring = monitoring,
                         onCollapse = onCollapse,
                     )
                 }
@@ -200,6 +204,7 @@ private fun Panel(
     vpnState: VpnConnectionState,
     hasVpnProfile: Boolean,
     onVpnToggle: () -> Unit,
+    monitoring: OverlayMonitoring?,
     onCollapse: () -> Unit,
 ) {
     Card(
@@ -218,6 +223,51 @@ private fun Panel(
                 text = stringResource(R.string.overlay_panel_title),
                 style = MaterialTheme.typography.titleMedium,
             )
+            if (monitoring != null) {
+                val device = monitoring.deviceInfo
+                val network = monitoring.networkInfo
+                val unavailable = stringResource(R.string.not_available)
+                val cpu = device.cpuUsagePercent?.let {
+                    stringResource(R.string.monitoring_percent, it)
+                } ?: unavailable
+                val battery = device.batteryTemperatureCelsius?.let {
+                    stringResource(R.string.monitoring_temperature, it)
+                } ?: unavailable
+                val memory = MemoryUsage.usedPercent(
+                    device.totalMemoryBytes,
+                    device.availableMemoryBytes,
+                )?.let { stringResource(R.string.monitoring_percent, it) } ?: unavailable
+                val ping = network.pingMillis?.let {
+                    stringResource(R.string.network_ping_value, it)
+                } ?: unavailable
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        MetricTile(
+                            label = stringResource(R.string.overlay_metric_cpu),
+                            value = cpu,
+                            modifier = Modifier.weight(1f),
+                        )
+                        MetricTile(
+                            label = stringResource(R.string.overlay_metric_battery),
+                            value = battery,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        MetricTile(
+                            label = stringResource(R.string.overlay_metric_memory),
+                            value = memory,
+                            modifier = Modifier.weight(1f),
+                        )
+                        MetricTile(
+                            label = stringResource(R.string.overlay_metric_ping),
+                            value = ping,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+            }
             Text(
                 text = vpnStatusLabel(vpnState),
                 style = MaterialTheme.typography.bodyMedium,
@@ -263,6 +313,25 @@ private fun Panel(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MetricTile(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.heightIn(min = 56.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(text = value, style = MaterialTheme.typography.titleSmall)
     }
 }
 

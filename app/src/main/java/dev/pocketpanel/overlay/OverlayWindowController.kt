@@ -75,6 +75,7 @@ class OverlayWindowController(
                     vpnState = vpnState,
                     hasVpnProfile = hasVpnProfile,
                     onVpnToggle = ::startVpnToggle,
+                    monitoring = monitoring,
                 )
             }
         }
@@ -84,6 +85,7 @@ class OverlayWindowController(
     private var expanded by mutableStateOf(false)
     private var vpnState by mutableStateOf<VpnConnectionState>(VpnConnectionState.Disconnected)
     private var hasVpnProfile by mutableStateOf(false)
+    private var monitoring by mutableStateOf<OverlayMonitoring?>(null)
 
     private var layoutParams: WindowManager.LayoutParams? = null
     private var attached = false
@@ -158,6 +160,11 @@ class OverlayWindowController(
         hasVpnProfile = profileAvailable
     }
 
+    /** Updates the 2x2 monitoring grid; null hides it. */
+    fun updateMonitoring(sample: OverlayMonitoring?) {
+        monitoring = sample
+    }
+
     private fun startVpnToggle() {
         val intent = Intent(appContext, VpnToggleActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -200,10 +207,17 @@ class OverlayWindowController(
         dragY = (layoutParams?.y ?: 0).toFloat()
     }
 
+    /**
+     * Uses the window offsets we just wrote instead of querying the view
+     * location again. `getLocationOnScreen` can lag one frame behind an
+     * `updateViewLayout` call, which makes dragging feel stepwise.
+     */
     private fun currentScreenOrigin(): Offset {
-        val location = IntArray(2)
-        composeView.getLocationOnScreen(location)
-        return Offset(location[0].toFloat(), location[1].toFloat())
+        val params = layoutParams
+        return Offset(
+            (params?.x ?: 0).toFloat(),
+            (params?.y ?: 0).toFloat(),
+        )
     }
 
     private fun onDrag(deltaX: Float, deltaY: Float) {

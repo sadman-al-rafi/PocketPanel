@@ -38,10 +38,6 @@ data class DeviceInfo(
     val isCharging: Boolean? = null,
     /** Raw [BatteryManager] health constant, or null when unavailable. */
     val batteryHealth: Int? = null,
-    /** Coarse thermal throttling state, or null on API 26-28 or on failure. */
-    val thermalStatus: ThermalLevel? = null,
-    /** Thermal envelope fraction in use, or null on API 26-29 or on failure. */
-    val thermalHeadroom: Float? = null,
     /** GPU identity from OpenGL ES, or null when no context can be created. */
     val gpuRenderer: String? = null,
     val gpuVendor: String? = null,
@@ -52,8 +48,8 @@ data class DeviceInfo(
         /**
          * Reads a fresh snapshot.
          *
-         * @param hardware the latest CPU, thermal and GPU readings, or an
-         *   empty snapshot when no source is available on this device.
+         * @param hardware the latest CPU and GPU readings, or an empty
+         *   snapshot when no source is available on this device.
          */
         fun load(context: Context, hardware: HardwareSnapshot = HardwareSnapshot()): DeviceInfo {
             val appContext = context.applicationContext
@@ -73,8 +69,6 @@ data class DeviceInfo(
                 batteryTemperatureCelsius = battery.temperatureCelsius,
                 isCharging = battery.isCharging,
                 batteryHealth = battery.health,
-                thermalStatus = hardware.thermal.status,
-                thermalHeadroom = hardware.thermal.headroom,
                 gpuRenderer = hardware.gpu?.renderer,
                 gpuVendor = hardware.gpu?.vendor,
                 glVersion = hardware.gpu?.glVersion,
