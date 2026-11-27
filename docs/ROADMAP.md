@@ -426,15 +426,16 @@ Status: [ ] Not started
   rest of the app works while the VPN is off.
 
 ### Deliverables
-- `vpn/` package: service, backend adapter, config parser/validator,
-  encrypted profile storage and state model.
-- In-app VPN screen or card: import configuration, connect, disconnect
-  and show status.
-- Manifest service declaration with `BIND_VPN_SERVICE` and the
-  `android.net.VpnService` intent filter; foreground service type
-  `specialUse`; notification channel.
-- Configuration import through the Storage Access Framework or pasted
-  text, so no storage permission is required.
+- `vpn/` package: config parser/validator, encrypted profile storage,
+  backend adapter, tunnel handle and state model. The `VpnService` is
+  provided by the library AAR.
+- In-app VPN card: import configuration, connect, disconnect and show
+  status.
+- The library AAR declares `GoBackend$VpnService` with
+  `BIND_VPN_SERVICE` and the `android.net.VpnService` intent filter;
+  the app does not duplicate that declaration.
+- Configuration import through the Storage Access Framework, so no
+  storage permission is required.
 - Unit tests for config parsing/validation, state mapping and secret
   redaction.
 - Documentation and a verification record.
@@ -445,19 +446,19 @@ Status: [ ] Not started
 - [ ] `VpnService.prepare()` consent is requested before the first
       connection; denial, revocation and `onRevoke()` are handled
       without a crash or a stale connected state.
-- [ ] Only one VPN connection is active; disconnect stops the service
-      and removes the notification.
+- [ ] Only one VPN connection is active; disconnect stops the tunnel and
+      clears the system VPN indicator.
 - [ ] Private keys are encrypted at rest with an Android Keystore key
       and never written to logs, plain DataStore or crash output.
 - [ ] Invalid or incomplete configurations are rejected with a clear
       error; no partial or fabricated connection state.
-- [ ] The VPN service runs as a foreground service with the required
-      type and notification on API 34+.
+- [ ] The app adds no foreground service type or notification channel for
+      the VPN; the library service is managed by the system.
 - [ ] Standard mode remains functional with the VPN off; no root or
       Shizuku dependency.
 - [ ] The connect/disconnect state is exposed through a reusable
       repository surface for a future overlay button.
-- [ ] Build, lint and JVM tests pass in an authorized CI run.
+- [ ] Build, lint and JVM tests pass in CI (D024).
 
 ### Out of Scope for M6
 - The overlay side-panel on/off button. M6 exposes the control
@@ -476,15 +477,18 @@ Status: [ ] Not started
 - Native ABIs: arm64-v8a, armeabi-v7a, x86 and x86_64. The AAR is about
   5.8 MB, so the APK will grow; measure the exact delta in CI.
 - Android `VpnService` requirements: `BIND_VPN_SERVICE` service
-  permission, `android.net.VpnService` intent filter, user consent via
-  `VpnService.prepare()`, foreground promotion and a system-managed
-  notification.
-- API 34+ foreground service type: use `specialUse` with
-  `FOREGROUND_SERVICE_SPECIAL_USE` (already declared for the overlay)
-  and a documented subtype.
-- Remaining validation before implementation: confirm the library's
-  Java 8 desugaring need, Kotlin/AGP compatibility and native packaging
-  in the first M6 CI run.
+  permission, `android.net.VpnService` intent filter and user consent via
+  `VpnService.prepare()`. The system shows the active-VPN indicator.
+- Verified from the library sources and the official WireGuard app on
+  2026-11-27: `GoBackend$VpnService` does not call `startForeground()` and
+  the app declares no VPN notification channel. The AAR manifest already
+  contains the service declaration, so the app must not add a duplicate.
+- No app foreground service type is required for the VPN. The overlay
+  keeps `specialUse` for its own service (D009).
+- Core library desugaring is enabled with `desugar_jdk_libs:2.1.5`: the
+  library uses `List.of` and `java.time`, which are not available on all
+  supported API levels without it. The first M6 CI run confirms
+  Kotlin/AGP compatibility and native packaging.
 
 ---
 

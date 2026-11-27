@@ -50,6 +50,9 @@ required_files=(
     "app/src/main/java/dev/pocketpanel/ui/settings/SettingsScreen.kt"
     "app/src/main/java/dev/pocketpanel/settings/SettingsRepository.kt"
     "app/src/main/java/dev/pocketpanel/settings/DataStoreSettingsRepository.kt"
+    "app/src/main/java/dev/pocketpanel/vpn/VpnRepository.kt"
+    "app/src/main/java/dev/pocketpanel/ui/main/VpnCard.kt"
+    "app/src/test/java/dev/pocketpanel/vpn/WireGuardConfigParserTest.kt"
     "app/src/main/java/dev/pocketpanel/settings/HandleEdge.kt"
     "app/src/main/java/dev/pocketpanel/overlay/OverlayContent.kt"
     "app/src/main/java/dev/pocketpanel/overlay/OverlayGeometry.kt"
@@ -296,6 +299,44 @@ fi
 
 if grep -rq 'TYPE_PHONE\|TYPE_SYSTEM_ALERT' app/src/main/java; then
     fail "legacy overlay window types are not allowed"
+else
+    ok
+fi
+
+# --- VPN wiring -------------------------------------------------------------
+
+section "VPN wiring"
+
+vpn_repository=app/src/main/java/dev/pocketpanel/vpn/VpnRepository.kt
+
+if grep -q 'module = "com.wireguard.android:tunnel"' gradle/libs.versions.toml \
+    && grep -q 'libs.wireguard.tunnel' app/build.gradle.kts; then
+    ok
+else
+    fail "WireGuard tunnel library is not declared in the catalog and app"
+fi
+
+if grep -q 'isCoreLibraryDesugaringEnabled = true' app/build.gradle.kts \
+    && grep -q 'libs.desugar.jdk.libs' app/build.gradle.kts; then
+    ok
+else
+    fail "core library desugaring for the WireGuard library is missing"
+fi
+
+if grep -q 'VpnService.prepare' "$vpn_repository"; then
+    ok
+else
+    fail "VPN connect path does not request system consent"
+fi
+
+if grep -q 'BIND_VPN_SERVICE' "$manifest"; then
+    fail "VPN service comes from the library AAR; do not redeclare it"
+else
+    ok
+fi
+
+if grep -rq 'startForeground' app/src/main/java/dev/pocketpanel/vpn; then
+    fail "VPN must not run as an app foreground service"
 else
     ok
 fi

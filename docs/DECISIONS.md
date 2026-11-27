@@ -943,23 +943,28 @@ Decision:
   `minAndroidGradlePluginVersion=1.0.0`; its dependencies are
   `androidx.annotation:1.9.1` and `androidx.collection:1.5.0`; it
   packages native libraries for arm64-v8a, armeabi-v7a, x86 and x86_64.
-- Use a `VpnService` subclass with `BIND_VPN_SERVICE` and the
-  `android.net.VpnService` intent filter. Request consent with
-  `VpnService.prepare()` before the first connection and handle
-  `onRevoke()`.
-- Run the service in the foreground with a notification. On API 34+ use
-  the `specialUse` type and `FOREGROUND_SERVICE_SPECIAL_USE` (already
-  declared for the overlay). Do not rely on `systemExempted`, which is
-  reserved for system integrations and VPN apps configured in system
-  settings.
-- Import configurations through the Storage Access Framework or pasted
-  text, so no storage permission is required.
+- Do not add a `VpnService` declaration to the app manifest: the library
+  AAR already declares `GoBackend$VpnService` with `BIND_VPN_SERVICE`
+  and the `android.net.VpnService` intent filter.
+- Request consent with `VpnService.prepare()` before the first connection
+  and observe `Tunnel.onStateChange` for revocation.
+- Do not call `startForeground()` for the VPN and do not add a VPN
+  notification channel or foreground service type. The library source
+  and the official WireGuard app were checked on 2026-11-27; neither
+  starts a foreground service. Android shows the active-VPN indicator.
+  `specialUse` remains only for the overlay (D009).
+- Import configurations through the Storage Access Framework, so no
+  storage permission is required.
 - Encrypt the WireGuard private key with an Android Keystore key before
   storage. Store only non-secret profile metadata in DataStore. Never
   log secrets.
 - Expose connection state and connect/disconnect through a
   `VpnRepository`. The overlay button is deferred to a later milestone
   but will reuse this surface.
+- Enable core library desugaring with `com.android.tools:desugar_jdk_libs:2.1.5`
+  (the newest stable release on Google Maven). The library uses
+  `List.of` and `java.time`, so desugaring is required below their
+  platform API levels. This matches the official WireGuard app.
 - No root or Shizuku; the client works in standard Android mode.
 
 Alternatives considered:
@@ -980,16 +985,21 @@ Consequences:
 - Android allows one active VPN per user/profile. The app must reflect
   system state and handle another VPN taking over.
 - The first connection requires a system consent dialog.
-- Full tunnel behavior cannot be verified in CI (no emulator); device
-  verification is user-reported (D016).
-- The first authorized M6 CI run must confirm Java 8 desugaring needs,
-  Kotlin/AGP compatibility and native packaging before further work.
+- No app notification is created for the VPN; Android's own VPN
+  indicator is the system feedback.
+- CI verifies compilation, native packaging and JVM tests but cannot
+  exercise a real tunnel; device verification is user-reported (D016).
 
 Verified sources (checked 2026-11-27):
 - https://central.sonatype.com/artifact/com.wireguard.android/tunnel
 - https://www.wireguard.com/embedding
 - https://developer.android.com/develop/connectivity/vpn
 - https://developer.android.com/develop/background-work/services/fgs/service-types
+- Library source artifact `tunnel-1.0.20260102-sources.jar` and the
+  official `WireGuard/wireguard-android` repository (`tunnel/src/main/AndroidManifest.xml`,
+  `GoBackend.java`, `ui/build.gradle.kts`). These correct the earlier
+  assumption that the app must promote the VPN service to the foreground
+  with `specialUse`.
 
 ### D024 — CI Runs on Push
 

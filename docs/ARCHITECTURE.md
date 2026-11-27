@@ -202,7 +202,7 @@ purpose-bound. Checked against the official type list:
 
 Therefore `specialUse` is the only eligible type for the overlay, but it
 is not automatically acceptable for Play distribution. It is a review
-risk, not a settled fact. The M6 VPN service also uses `specialUse`; see
+risk, not a settled fact. The VPN does not add a foreground service; see
 section 13.
 
 Fallback if `specialUse` is not accepted: run the overlay without a
@@ -357,22 +357,22 @@ emulator is provisioned (D016).
 ## 13. VPN Client (M6)
 
 - The client embeds the official WireGuard tunnel library
-  (`com.wireguard.android:tunnel`) instead of implementing the protocol.
-  The library is wrapped behind a `VpnBackend` interface so the UI and
-  tests never depend on it directly.
-- A `VpnService` subclass owns the Android tunnel interface. The service
-  is declared with `android.permission.BIND_VPN_SERVICE` and the
-  `android.net.VpnService` intent filter, so only the system can bind to
-  it.
+  (`com.wireguard.android:tunnel`). `VpnRepository` wraps the backend so
+  the UI never depends on the library directly.
+- The library AAR declares `GoBackend$VpnService` with
+  `android.permission.BIND_VPN_SERVICE` and the `android.net.VpnService`
+  intent filter, so only the system can bind to it. The app does not
+  redeclare the service.
 - `VpnService.prepare()` consent is requested before the first connect.
-  Denial or revocation is surfaced as a disconnected state, never a
-  stale connected state. `onRevoke()` closes the tunnel.
-- The service runs in the foreground with a non-dismissible
-  notification. On API 34+ it uses the `specialUse` foreground service
-  type; the overlay already declares `FOREGROUND_SERVICE_SPECIAL_USE`.
-- Configurations are imported through the Storage Access Framework or
-  pasted text, then parsed and validated locally. No storage permission
-  is required.
+  Denial is surfaced as a disconnected state, never a stale connected
+  state. Revocation closes the tunnel through the library service and is
+  observed with `Tunnel.onStateChange`.
+- The VPN does not run as an app foreground service: the verified library
+  and official app do not call `startForeground()`. The system provides
+  the active-VPN notification. No app notification channel or foreground
+  service type is added for the VPN.
+- Configurations are imported through the Storage Access Framework, then
+  parsed and validated locally. No storage permission is required.
 - The WireGuard private key is encrypted with an Android Keystore key
   before storage. Secrets are never logged or included in diagnostics.
 - A `VpnRepository` exposes connection state and connect/disconnect

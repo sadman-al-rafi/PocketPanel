@@ -56,8 +56,8 @@ class EncryptedVpnProfileStore(
             val name = stored[Keys.NAME] ?: return@map null
             VpnProfileSummary(
                 name = name,
-                addressSummary = stored[Keys.ADDRESS]?.ifEmpty { null },
-                endpointSummary = stored[Keys.ENDPOINT]?.ifEmpty { null },
+                addressSummary = stored[Keys.ADDRESS]?.takeIf { it.isNotEmpty() },
+                endpointSummary = stored[Keys.ENDPOINT]?.takeIf { it.isNotEmpty() },
             )
         }
 

@@ -351,18 +351,19 @@ CI because no emulator is provisioned (D016).
 Automated (CI on push):
 - Build with the WireGuard tunnel library and confirm the native
   libraries are packaged for the supported ABIs.
-- Lint with the VPN service and manifest changes.
-- JVM tests: configuration parsing and validation, profile state
-  mapping, error mapping and secret redaction.
-- Static checks: manifest service wiring, permission allowlist, and no
-  secrets in source or logs.
+- Lint with the VPN code and library dependency.
+- JVM tests: configuration parsing and validation, including missing
+  sections, invalid keys and secret redaction.
+- Static checks: library dependency and consent wiring, permission
+  allowlist, and no duplicate VPN service declaration.
 
 Manual device verification (user-reported):
 - First connect shows the system VPN consent dialog; denial leaves the
   UI disconnected.
-- A valid configuration establishes a tunnel; the system VPN indicator
-  and the app notification appear.
-- Disconnect removes the notification and restores normal networking.
+- A valid configuration establishes a tunnel; Android's system VPN
+  indicator appears. The app does not create a VPN notification.
+- Disconnect clears the system VPN indicator and restores normal
+  networking.
 - Revoking the VPN in system settings triggers `onRevoke()` and the app
   shows disconnected, not connected.
 - Starting another VPN app stops this one and the UI updates.
