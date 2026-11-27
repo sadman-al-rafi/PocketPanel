@@ -200,26 +200,27 @@ Never start the next milestone without explicit authorization.
 
 ## 13. CI Authorization Policy — Mandatory
 
-CI runs on push. The project owner enabled push-triggered verification
-on 2026-11-27 (D024); this supersedes the earlier manual-only rule.
+CI is manual and opt-in. The project owner restored the manual-only
+trigger on 2026-11-27 (D031); this supersedes the push rule in D024.
 
-1. Pushing commits to `main` is allowed and starts
-   `.github/workflows/verify-toolchain.yml`.
-2. Never create a pull request or add `pull_request` or `schedule`
-   triggers to run CI.
-3. Do not push solely to discover whether the build works. Run
-   `scripts/check-static.sh`, review the change and diagnose locally
-   first.
+1. `.github/workflows/verify-toolchain.yml` has a single
+   `workflow_dispatch` trigger. No workflow is started by a push, pull
+   request or schedule.
+2. No workflow is started, and no commit is pushed in order to start one,
+   without explicit permission for that run.
+3. Before requesting a run, state what will be tested, why it is worth
+   testing now and which workflow will run.
 4. Local checks that do not trigger remote CI are allowed and expected.
-5. Do not repeatedly retry a failed run. Diagnose the failure, apply the
-   smallest appropriate fix and push the fix.
-6. Generate the debug APK through CI.
+   Run `scripts/check-static.sh`, review the change and diagnose locally
+   first.
+5. A failed run is diagnosed from its logs, not retried repeatedly.
+6. Generate the debug APK only through an authorized CI run.
 7. Report CI results only from a run that actually completed, and state
    the run ID and commit.
 
 Workflow requirements:
-- `.github/workflows/verify-toolchain.yml` triggers on `push` to `main`
-  and on `workflow_dispatch`. Do not add `pull_request` or `schedule`
+- `.github/workflows/verify-toolchain.yml` triggers only on
+  `workflow_dispatch`. Do not add `push`, `pull_request` or `schedule`
   triggers.
 - The workflow performs the build, lint and unit tests. No emulator
   installation, AVD creation or emulator boot is part of CI.

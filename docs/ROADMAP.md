@@ -474,7 +474,7 @@ works normally on a test device.
       Shizuku dependency.
 - [x] The connect/disconnect state is exposed through a reusable
       repository surface for a future overlay button.
-- [x] Build, lint and JVM tests pass in CI (D024).
+- [x] Build, lint and JVM tests pass in CI (D031).
 
 ### Out of Scope for M6
 - The overlay side-panel on/off button. M6 exposes the control
@@ -562,7 +562,7 @@ hardware card confirmed on a test device by the project owner.
 - [ ] Standard mode remains functional with no new permission and no
       new dependency. Code review confirms no new permission or
       dependency; runtime check pending.
-- [x] Build, lint and JVM tests pass in CI (D024).
+- [x] Build, lint and JVM tests pass in CI (D031).
 
 ### Verification Record
 - CI run `45966560679` (run 28, commit `773e6b3`): `assembleDebug`,
@@ -639,7 +639,7 @@ follow-up home/panel changes on a test device.
 - [ ] VPN control from the overlay reflects the real tunnel state and
       respects system consent: consent is launched for result before the
       first connect, and denial leaves the UI disconnected.
-- [ ] Build and tests pass in CI (D024).
+- [ ] Build and tests pass in CI (D031).
 
 ### Verification Requirements
 - Local static checks before pushing.
@@ -750,5 +750,4 @@ owner and were never implemented.
 
 The final CI result, APK details, device verification and known
 limitations are recorded in the M11 Final Verification Report above. CI
-runs on every push to `main` (D024); a run is reported only after it
-completes.
+is manual and opt-in (D031); a run is reported only after it completes.

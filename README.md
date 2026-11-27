@@ -69,10 +69,11 @@ provision an emulator, so they are not executed in CI.
 
 ## CI
 
-`.github/workflows/verify-toolchain.yml` runs on every push to `main` and
-can also be started manually. It builds the debug APK, runs lint and JVM
-tests, and publishes results to the `ci-results` branch and workflow
-artifacts. Pull-request and schedule triggers are intentionally absent.
+`.github/workflows/verify-toolchain.yml` is manual-only: it is started
+with `workflow_dispatch` when the project owner authorizes a run. It
+builds the debug APK, runs lint and JVM tests, and publishes results to
+the `ci-results` branch and workflow artifacts. Push, pull-request and
+schedule triggers are intentionally absent.
 
 ## Permissions
 
@@ -107,6 +108,7 @@ scripts/       local static checks
 - `docs/DECISIONS.md` — verified versions and technical decisions
 - `docs/ROADMAP.md` — milestone history and final verification report
 - `docs/TESTING.md` — verification procedures and results
+- `docs/RELEASING.md` — signing, versioning and publishing procedure
 - `AGENTS.md` — contributor rules
 
 ## Known limitations

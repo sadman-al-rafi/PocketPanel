@@ -5,20 +5,19 @@ unavailable test is reported as such, never implied to have passed.
 
 ## 1. CI Authorization
 
-CI runs on every push to `main` (AGENTS.md section 13, D024).
+CI is manual and opt-in (AGENTS.md section 13, D031).
 
-- `.github/workflows/verify-toolchain.yml` triggers on `push` to `main`
-  and on `workflow_dispatch`. It must not be triggered by
+- `.github/workflows/verify-toolchain.yml` has a single
+  `workflow_dispatch` trigger. It must not be triggered by `push`,
   `pull_request` or `schedule`.
-- A push starts the build, lint and JVM tests automatically. Results
-  are published to the `ci-results` branch.
-- Do not push solely to discover whether the code compiles. Run
-  `scripts/check-static.sh`, review the change and diagnose locally
-  first.
+- No workflow is started, and no commit is pushed in order to start one,
+  without explicit permission for that run.
+- Before requesting a run, state what will be tested, why it is worth
+  testing now and which workflow will run.
+- Local checks (`scripts/check-static.sh`, section 2) come first; CI is
+  not a substitute for them.
 - A failed run is diagnosed from its logs first. Do not retry
-  repeatedly; push the smallest fix.
-- CI is not a substitute for local static checks (section 2), which
-  cover what they can without a JDK or Android SDK.
+  repeatedly.
 
 The debug APK is produced by CI, and every reported result must come
 from a run that actually completed.
@@ -55,11 +54,10 @@ As of M2 the script runs 75 checks.
 These checks are structural. They cannot prove that the code compiles
 or that the UI renders; only an authorized CI run can do that.
 
-## 3. Build Verification (CI on push)
+## 3. Build Verification (authorized runs)
 
-The committed Gradle wrapper selects Gradle 9.6.0 (D011). A push to
-`main` runs `.github/workflows/verify-toolchain.yml`, which executes,
-in order:
+The committed Gradle wrapper selects Gradle 9.6.0 (D011). An authorized
+run of `.github/workflows/verify-toolchain.yml` executes, in order:
 
     ./gradlew --version                     # wrapper + launcher JVM
     ./gradlew buildEnvironment              # resolved plugins, KGP version

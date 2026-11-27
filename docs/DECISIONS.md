@@ -1017,7 +1017,7 @@ reported on 2026-11-27 that the VPN works normally on a test device.
 ### D024 — CI Runs on Push
 
 Date: 2026-11-27
-Status: Accepted (user-directed).
+Status: Superseded by D031 on 2026-11-27 (manual-only trigger restored).
 
 Context: The project owner asked to restore the push trigger and
 delegated continuous execution. D016 made CI manual-only; that trigger
@@ -1272,5 +1272,71 @@ Verification: CI run `46016088373` (run 40, commit `c9c52b5`) passed build,
 lint (0 errors, 5 pre-existing warnings) and 49/49 JVM tests, including 2
 new `MemoryUsageTest` cases. The debug APK is 28,031,631 bytes (sha256
 `f34962f3bdf5a259a509bae4200dcdf9c6cc3318a9783d7bad4c1fab4b3559bd`).
-`scripts/check-static.sh` passes 111/111. Device verification is still
-required.
+`scripts/check-static.sh` passes 111/111. Device verification was later
+confirmed by the project owner.
+
+### D031 — Manual CI Trigger Restored
+
+Date: 2026-11-27
+Status: Accepted (user-directed).
+
+Context: The project owner asked to change the verify workflow back to a
+manual trigger and not to push the change. D024's push trigger must be
+removed; this decision supersedes it.
+
+Decision:
+- `.github/workflows/verify-toolchain.yml` has a single
+  `workflow_dispatch` trigger. No `push`, `pull_request` or `schedule`
+  trigger is present.
+- Concurrency no longer cancels an older run (`cancel-in-progress: false`).
+- No workflow is started, and no commit is pushed to start one, without
+  explicit permission for that run.
+- The workflow still performs build, lint, JVM tests and APK packaging,
+  and still publishes results to `ci-results`.
+- The change was made locally only; it was not pushed when requested.
+
+Consequences: pushes no longer trigger CI. Build verification again
+requires an explicitly authorized run. Existing results from runs 1-51
+remain valid for the commits they recorded.
+
+### D032 — Release Signing and Versioning
+
+Date: 2026-11-27
+Status: Accepted.
+
+Context: The owner requested reproducible release preparation without
+generating or changing the signing key, and without publishing anything.
+
+Decision:
+- Keep `applicationId`/`namespace` as `dev.pocketpanel` permanently.
+- Keep `versionCode` and `versionName` in tracked
+  `release/version.properties`; Gradle reads them. `versionCode` must
+  increase for every published release, and the GitHub tag is
+  `v<versionName>`.
+- Read release signing inputs from `POCKETPANEL_RELEASE_*` environment
+  variables first, then from an untracked `keystore.properties`. No secret
+  is stored in Gradle files or Git; `.gitignore` already excludes
+  `*.jks`, `*.keystore`, `keystore.properties` and `local.properties`.
+- Define a `release` build type with the signing config but leave the debug
+  build type untouched, so debug builds work without release credentials.
+  Missing credentials make only release tasks fail.
+- Add `.github/workflows/release.yml` with `workflow_dispatch` only, a
+  `PUBLISH` confirmation input, `environment: release` for human approval,
+  `apksigner` verification and certificate fingerprint pinning via
+  `RELEASE_CERT_SHA256`. It uses `gh release create` to publish.
+- Document setup, backup, versioning, verification and publishing in
+  `docs/RELEASING.md`.
+
+Alternatives considered:
+- Generating or storing a keystore in the repository: rejected; the owner
+  will create and safeguard the permanent key.
+- Hard-coding credentials in `build.gradle.kts`: rejected; secrets must
+  never be committed.
+- Automatic release on tag/push: rejected; publishing requires explicit
+  approval.
+
+Consequences: no release has been published. The release workflow cannot
+run until the owner configures secrets and the `release` environment
+reviewers, then dispatches it manually. The owner must back up the
+keystore and all signing inputs offline; losing them prevents future
+updates under the same identity.

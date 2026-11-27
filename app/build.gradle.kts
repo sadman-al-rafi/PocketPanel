@@ -1,7 +1,34 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
 }
+
+// Version values live in a tracked file so they are reviewed in one place.
+val releaseVersion = Properties().apply {
+    rootProject.file("release/version.properties").inputStream().use { load(it) }
+}
+val versionCodeValue = releaseVersion.getProperty("versionCode")?.toIntOrNull()
+    ?: error("release/version.properties must define a numeric versionCode")
+val versionNameValue = releaseVersion.getProperty("versionName")?.takeIf { it.isNotBlank() }
+    ?: error("release/version.properties must define versionName")
+
+// Signing never lives in tracked files. Environment variables take priority
+// over a local, untracked keystore.properties. Missing values leave the
+// release build unable to sign, but never affect debug builds.
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.isFile) file.inputStream().use { load(it) }
+}
+fun releaseSetting(envSuffix: String, propertyName: String): String? =
+    System.getenv("POCKETPANEL_RELEASE_$envSuffix")
+        ?: keystoreProperties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
+
+val releaseStoreFile = releaseSetting("STORE_FILE", "storeFile")
+val releaseStorePassword = releaseSetting("STORE_PASSWORD", "storePassword")
+val releaseKeyAlias = releaseSetting("KEY_ALIAS", "keyAlias")
+val releaseKeyPassword = releaseSetting("KEY_PASSWORD", "keyPassword")
 
 android {
     namespace = "dev.pocketpanel"
@@ -14,12 +41,34 @@ android {
     }
 
     defaultConfig {
+        // Immutable release identity: do not change this for updates.
         applicationId = "dev.pocketpanel"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = versionCodeValue
+        versionName = versionNameValue
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        create("release") {
+            // A non-existent placeholder keeps configuration valid when no
+            // release credentials are supplied; only release tasks fail.
+            storeFile = rootProject.file(
+                releaseStoreFile ?: "release-keystore-not-configured.jks",
+            )
+            storePassword = releaseStorePassword.orEmpty()
+            keyAlias = releaseKeyAlias.orEmpty()
+            keyPassword = releaseKeyPassword.orEmpty()
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = false
+            isShrinkResources = false
+            signingConfig = signingConfigs.getByName("release")
+        }
     }
 
     buildFeatures {

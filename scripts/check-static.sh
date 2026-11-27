@@ -4,8 +4,8 @@
 #
 # Runs without a JDK, Android SDK, Gradle or network access. It verifies
 # structure and cross-references only; it cannot prove that the code
-# compiles or that the UI renders. Build and unit-test verification runs
-# in CI on push (AGENTS.md section 13, docs/TESTING.md).
+# compiles or that the UI renders. Build and unit-test verification
+# requires an authorized manual CI run (AGENTS.md section 13, D031).
 #
 # Usage: scripts/check-static.sh
 set -uo pipefail
@@ -85,6 +85,9 @@ required_files=(
     "app/src/main/res/xml/data_extraction_rules.xml"
     "scripts/check-static.sh"
     ".github/workflows/verify-toolchain.yml"
+    ".github/workflows/release.yml"
+    "release/version.properties"
+    "docs/RELEASING.md"
 )
 
 for file in "${required_files[@]}"; do
@@ -554,9 +557,9 @@ else
 fi
 
 if grep -qE '^  push:' "$workflow"; then
-    ok
+    fail "workflow must not run automatically (D031)"
 else
-    fail "workflow has no push trigger (D024)"
+    ok
 fi
 
 if grep -qE '^  (pull_request|schedule):' "$workflow"; then
@@ -576,6 +579,62 @@ if grep -qE '^\s+- name: Run unit tests' "$workflow" \
     ok
 else
     fail "workflow no longer runs the JVM unit tests"
+fi
+
+# --- Release infrastructure -------------------------------------------------
+
+section "Release infrastructure"
+
+app_build=app/build.gradle.kts
+version_file=release/version.properties
+release_workflow=.github/workflows/release.yml
+
+if grep -q 'applicationId = "dev.pocketpanel"' "$app_build"; then
+    ok
+else
+    fail "release application ID changed from dev.pocketpanel"
+fi
+
+if grep -qE '^versionCode=[0-9]+$' "$version_file" \
+    && grep -qE '^versionName=.+$' "$version_file" \
+    && grep -q 'release/version.properties' "$app_build"; then
+    ok
+else
+    fail "version file is missing, malformed, or not read by Gradle"
+fi
+
+if grep -q 'System.getenv("POCKETPANEL_RELEASE_' "$app_build" \
+    && grep -q 'keystore.properties' "$app_build" \
+    && grep -q 'signingConfig = signingConfigs.getByName("release")' "$app_build"; then
+    ok
+else
+    fail "release signing is not wired to secure inputs"
+fi
+
+tracked_secrets=$(git ls-files | grep -E '(^|/)(keystore\.properties|.*\.(jks|keystore))$' || true)
+if [ -z "$tracked_secrets" ]; then
+    ok
+else
+    fail "signing material is tracked by Git:"
+    printf '%s\n' "$tracked_secrets" | sed 's/^/      /'
+fi
+
+on_block=$(awk '/^on:/{flag=1;next} /^[a-zA-Z]/{flag=0} flag' "$release_workflow")
+if grep -q 'workflow_dispatch:' <<< "$on_block" \
+    && ! grep -qE '^[[:space:]]+(push|pull_request|schedule|workflow_run|release):' <<< "$on_block"; then
+    ok
+else
+    fail "release workflow is not manual-only"
+fi
+
+if grep -q 'environment: release' "$release_workflow" \
+    && grep -q "inputs.confirm == 'PUBLISH'" "$release_workflow" \
+    && grep -q 'verify --print-certs' "$release_workflow" \
+    && grep -q "tr -d ':'" "$release_workflow" \
+    && grep -q 'gh release create' "$release_workflow"; then
+    ok
+else
+    fail "release workflow is missing approval, verification or publishing steps"
 fi
 
 # --- Source hygiene ---------------------------------------------------------

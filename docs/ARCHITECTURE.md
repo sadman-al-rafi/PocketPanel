@@ -353,9 +353,9 @@ feature.
 
 See docs/TESTING.md. Local development uses `scripts/check-static.sh`,
 which needs no JDK or Android SDK. Compilation, lint, JVM tests and the
-debug APK are produced by the GitHub Actions workflow on push to `main`
-(D012, D024). Instrumented tests exist but are not executed, and no
-emulator is provisioned (D016).
+debug APK are produced by the GitHub Actions workflow only when the
+project owner authorizes a manual run (D012, D031). Instrumented tests
+exist but are not executed, and no emulator is provisioned (D016).
 
 ## 12. Explicitly Deferred
 
