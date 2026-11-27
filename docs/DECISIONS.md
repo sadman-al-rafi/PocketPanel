@@ -270,7 +270,9 @@ Decision:
 - Prefer documented SDK APIs for every metric.
 - Use `/proc/stat` only for CPU usage, as an explicitly best-effort
   provider that can report Unavailable.
-- Never derive, interpolate or estimate a missing reading.
+- Never derive, interpolate or estimate a missing reading. D025 later
+  makes one narrowly scoped exception: CPU frequency-based estimation is
+  allowed only when it is explicitly labelled as an estimate in the UI.
 - GPU utilization is unsupported and must be presented as such.
 
 Alternatives considered:
@@ -1007,8 +1009,8 @@ build, lint and 38/38 JVM tests, including 13 parser cases. Lint had 0
 errors and 5 pre-existing warnings. The debug APK was 27,989,171 bytes
 (sha256 `c21ade4cbbdab100943eb25b2eb8ae64cc61a4211567095a8bb5508e89900fac`).
 Run 23 (`45962342278`) failed on a Kotlin override mismatch in
-`VpnTunnel`; the fix was verified by run 24. Device behavior remains
-unverified.
+`VpnTunnel`; the fix was verified by run 24. The project owner then
+reported on 2026-11-27 that the VPN works normally on a test device.
 
 ### D024 — CI Runs on Push
 
@@ -1034,3 +1036,56 @@ Consequences:
 - Every push to `main` consumes a CI run and publishes a new result.
 - Reports must state the run ID and commit.
 - Force-pushing `ci-results` is expected and is part of the workflow.
+
+### D025 — CPU Usage on Android 8+
+
+Date: 2026-11-27
+Status: Accepted.
+
+Context: The M3 CPU row showed "Not available" on every test device.
+The reference project `takke/cpustats` documents the reason: apps cannot
+read `/proc/stat` on Android 8.0 (API 26) and later, and its
+`CpuInfoCollector.takeCpuUsageSnapshot()` deliberately returns null from
+API 26 upward. PocketPanel's `minSdk` is 26, so the `/proc/stat` provider
+could never produce a sample.
+
+Decision:
+- Keep `/proc/stat` counter deltas as the preferred source, used only
+  when the file is readable.
+- When it is unavailable, derive an approximate total usage from the
+  kernel cpufreq sysfs attributes `scaling_cur_freq`, `cpuinfo_min_freq`
+  and `cpuinfo_max_freq` under `/sys/devices/system/cpu/cpuN/cpufreq/`.
+  The percentage is `(sum(current) - sum(min)) * 100 / (sum(max) - sum(min))`,
+  clamped to 0-100. Minimum and maximum values are cached per core.
+- Mark every such sample as an estimate in `CpuUsage` and `DeviceInfo`.
+  The UI must display "CPU usage (estimated)" with an explanatory note,
+  not an unqualified percentage.
+- The sysfs path is not an Android SDK contract and may be unreadable
+  under device SELinux policy. If no core exposes the values, the row
+  stays "Not available" rather than showing a fabricated number.
+- Never present this fallback as a CPU counter measurement. It does not
+  measure time spent busy; it infers activity from clock frequency.
+
+Alternatives considered:
+- Root or Shizuku: rejected; optional elevated access must not be needed
+  for basic monitoring.
+- Returning 0% when `/proc/stat` fails: rejected; that is a fabricated
+  reading.
+- Hiding the CPU row: rejected; the user asked for a working reading and
+  an explicitly labelled estimate is more useful.
+- Per-process CPU time: rejected; it does not describe total device CPU
+  usage.
+
+Compatibility notes: the sysfs attributes are documented in the Linux
+kernel `cpu-freq` user guide. Android app access to sysfs is not
+guaranteed and varies by OEM. No new dependency or permission is added.
+
+Verification sources (checked 2026-11-27):
+- https://github.com/takke/cpustats (`CpuInfoCollector.kt`,
+  `UsageUpdateService.kt`, `MyUtil.kt`)
+- https://www.kernel.org/doc/Documentation/cpu-freq/user-guide.txt
+
+Consequences: supported devices should now show a CPU percentage, but it
+may be an estimate. The UI distinguishes measured from estimated values.
+The fallback is not a substitute for a real counter on devices where the
+sysfs files are also blocked.

@@ -20,8 +20,10 @@ data class DeviceInfo(
     val apiLevel: Int = Build.VERSION.SDK_INT,
     val model: String = Build.MODEL,
     val manufacturer: String = Build.MANUFACTURER,
-    /** Total CPU usage in percent, or null when /proc/stat is unreadable. */
+    /** Total CPU usage in percent, or null when no source is readable. */
     val cpuUsagePercent: Int? = null,
+    /** True when the percentage is estimated from core clock frequencies. */
+    val cpuUsageIsEstimate: Boolean = false,
     /** Number of processors reported by the runtime, or null when unknown. */
     val cpuCount: Int? = null,
     /** Physical memory in bytes, or null when unavailable. */
@@ -42,10 +44,10 @@ data class DeviceInfo(
         /**
          * Reads a fresh snapshot.
          *
-         * @param cpuUsagePercent the latest CPU-usage sample from
-         *   [CpuUsageSampler], or null when no sample is available.
+         * @param cpuUsage the latest sample from [CpuUsageSampler], or null
+         *   when no CPU source is available on this device.
          */
-        fun load(context: Context, cpuUsagePercent: Int? = null): DeviceInfo {
+        fun load(context: Context, cpuUsage: CpuUsage? = null): DeviceInfo {
             val appContext = context.applicationContext
             val memory = readMemory(appContext)
             val battery = readBattery(appContext)
@@ -54,7 +56,8 @@ data class DeviceInfo(
                 apiLevel = Build.VERSION.SDK_INT,
                 model = Build.MODEL,
                 manufacturer = Build.MANUFACTURER,
-                cpuUsagePercent = cpuUsagePercent,
+                cpuUsagePercent = cpuUsage?.percent,
+                cpuUsageIsEstimate = cpuUsage?.estimated ?: false,
                 cpuCount = Runtime.getRuntime().availableProcessors().takeIf { it > 0 },
                 totalMemoryBytes = memory.totalBytes,
                 availableMemoryBytes = memory.availableBytes,

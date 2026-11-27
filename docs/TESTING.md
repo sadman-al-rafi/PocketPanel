@@ -209,8 +209,9 @@ Current status (2026-11-26):
   savedstate 1.5.0, JUnit 4.13.2, androidx.test ext-junit 1.3.0 and
   runner 1.7.0 (D014, D019).
 - M3/M4 add no new dependencies. They use framework APIs
-  (`ActivityManager`, `BatteryManager`, `/proc/stat`) and the existing
-  Compose, lifecycle and DataStore libraries.
+  (`ActivityManager`, `BatteryManager`) and framework files
+  (`/proc/stat`, cpufreq sysfs) with the existing Compose, lifecycle and
+  DataStore libraries. D025 added the CPU fallback without a dependency.
 
 ## 5. Application Verification
 
@@ -282,8 +283,12 @@ For every metric, verify all three states:
    that explicitly.
 
 Specific checks:
-- CPU: value derives from `/proc/stat` deltas; first sample after start
-  is not shown as a fabricated percentage.
+- CPU: counter deltas are used when `/proc/stat` is readable; on API 26+
+  the UI shows "CPU usage (estimated)" with the explanatory note. The
+  estimate comes from cpufreq sysfs values and is clamped to 0-100. If
+  neither source is readable the row shows "Not available", not 0%.
+- JVM tests cover counter deltas, frequency estimation and `/proc/stat`
+  parsing without double-counting guest time.
 - RAM: `ActivityManager.MemoryInfo` values match a system reference
   within reasonable tolerance.
 - Battery: level, status, temperature and voltage match system

@@ -62,6 +62,9 @@ required_files=(
     "app/src/main/java/dev/pocketpanel/overlay/OverlayWindowController.kt"
     "app/src/test/java/dev/pocketpanel/overlay/OverlayGeometryTest.kt"
     "app/src/test/java/dev/pocketpanel/settings/HandleEdgeTest.kt"
+    "app/src/main/java/dev/pocketpanel/system/CpuUsage.kt"
+    "app/src/main/java/dev/pocketpanel/system/CpuUsageMath.kt"
+    "app/src/test/java/dev/pocketpanel/system/CpuUsageMathTest.kt"
     "app/src/main/res/drawable/ic_notification.xml"
     "app/src/main/res/values/strings.xml"
     "app/src/main/res/values/themes.xml"
@@ -301,6 +304,34 @@ if grep -rq 'TYPE_PHONE\|TYPE_SYSTEM_ALERT' app/src/main/java; then
     fail "legacy overlay window types are not allowed"
 else
     ok
+fi
+
+# --- CPU monitoring ---------------------------------------------------------
+
+section "CPU monitoring"
+
+cpu_sampler=app/src/main/java/dev/pocketpanel/system/CpuUsageSampler.kt
+main_screen=app/src/main/java/dev/pocketpanel/ui/main/MainScreen.kt
+strings=app/src/main/res/values/strings.xml
+
+if grep -q 'CpuUsageMath.fromFrequencies' "$cpu_sampler"; then
+    ok
+else
+    fail "CPU sampler has no cpufreq fallback"
+fi
+
+if grep -q 'cpuUsageIsEstimate' "$main_screen" \
+    && grep -q 'monitoring_cpu_usage_estimated' "$strings"; then
+    ok
+else
+    fail "estimated CPU values are not labelled in the UI"
+fi
+
+if grep -q 'val cpuUsageIsEstimate' \
+    app/src/main/java/dev/pocketpanel/system/DeviceInfo.kt; then
+    ok
+else
+    fail "DeviceInfo does not expose the CPU estimate flag"
 fi
 
 # --- VPN wiring -------------------------------------------------------------

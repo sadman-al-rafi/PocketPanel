@@ -287,7 +287,12 @@ invalid placeholder code (not a toolchain incompatibility). Authorized
 manual run 45824780276 (run 20, commit `ca9ba8a`) succeeded: build,
 lint 0 errors / 5 pre-existing warnings, 15/15 JVM tests and the debug
 APK. Runtime monitoring behavior remains unverified because no device
-or emulator test is authorized (D016).
+or emulator test was authorized at that time (D016).
+
+2026-11-27 bug fix (before M7): the CPU row was empty on every test
+device because `/proc/stat` is unreadable by apps on API 26+. D025 adds
+a clearly labelled cpufreq-based fallback. CI and device verification
+are pending.
 
 ### Objectives
 - CPU usage monitoring.
@@ -298,8 +303,9 @@ or emulator test is authorized (D016).
 
 ### Acceptance Criteria
 - [✓] Supported readings are real. Memory, battery and CPU values come
-      from documented platform APIs; CPU usage is best-effort from
-      `/proc/stat`.
+      from documented platform APIs; CPU usage uses `/proc/stat` deltas
+      where available and an explicitly labelled estimate otherwise
+      (D025).
 - [✓] Unsupported readings are clearly identified. Null values render
       as "Not available".
 - [~] Monitoring updates correctly. Implemented with interval polling;
@@ -313,7 +319,8 @@ or emulator test is authorized (D016).
 - `DeviceInfo` reads memory through `ActivityManager.MemoryInfo`,
   battery level/temperature/health through the sticky
   `ACTION_BATTERY_CHANGED` broadcast, and CPU usage through
-  best-effort `/proc/stat` deltas.
+  best-effort `/proc/stat` deltas or a labelled cpufreq estimate when
+  `/proc/stat` is blocked (D025).
 - `SystemInfoRepository` samples on `Dispatchers.Default` only while
   the UI observes the state.
 - `PocketPanelViewModel` persists monitoring state and interval through
@@ -411,9 +418,9 @@ confirmed that network data and the ping row work on a test device.
 ---
 
 ## M6 — WireGuard VPN Client
-Status: [✓] Implemented and build verified 2026-11-27 (CI run 24,
-commit `5ecbc25`). Device verification not run; see the verification
-record below.
+Status: [✓] Implemented and verified 2026-11-27. CI run 24
+verified build, lint and tests; the project owner confirmed the VPN
+works normally on a test device.
 
 ### Objectives
 - Add an embedded WireGuard client using the official
@@ -493,7 +500,7 @@ record below.
   Kotlin/AGP compatibility and native packaging.
 
 ### Verification Record (2026-11-27)
-- CI run `45962542309` (run 24), commit `5ecbc25`: `assembleDebug`,
+- CI run 45962542309 (run 24), commit `5ecbc25`: `assembleDebug`,
   `lintDebug` and `testDebugUnitTest` all succeeded.
 - JVM tests: 38 tests, 0 failures. `WireGuardConfigParserTest` adds 13
   cases; the 25 earlier tests still pass.
@@ -509,8 +516,10 @@ record below.
   method. The fix implements `override fun getName()`.
 - `scripts/check-static.sh`: 86/86 checks pass.
 - Not verified in CI: a real tunnel, the consent dialog, revocation,
-  Keystore encryption on a device and the ABI contents of the APK. These
-  need a device and are user-reported (D016).
+  Keystore encryption on a device and the ABI contents of the APK.
+- Device verification: the project owner reported on 2026-11-27 that the
+  VPN feature works normally on a test device. Individual consent,
+  revocation and revoke-during-tunnel cases were not separately reported.
 
 ---
 

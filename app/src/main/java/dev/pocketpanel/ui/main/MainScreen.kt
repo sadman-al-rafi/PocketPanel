@@ -369,11 +369,24 @@ private fun MonitoringCard(
 @Composable
 private fun MonitoringReadings(deviceInfo: DeviceInfo) {
     MonitoringReading(
-        label = stringResource(R.string.monitoring_cpu_usage),
+        label = stringResource(
+            if (deviceInfo.cpuUsageIsEstimate) {
+                R.string.monitoring_cpu_usage_estimated
+            } else {
+                R.string.monitoring_cpu_usage
+            },
+        ),
         value = deviceInfo.cpuUsagePercent?.let {
             stringResource(R.string.monitoring_percent, it)
         } ?: stringResource(R.string.not_available),
     )
+    if (deviceInfo.cpuUsageIsEstimate) {
+        Text(
+            text = stringResource(R.string.monitoring_cpu_estimate_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
     MonitoringReading(
         label = stringResource(R.string.monitoring_cpu_cores),
         value = deviceInfo.cpuCount?.toString()

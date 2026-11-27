@@ -52,6 +52,8 @@
     <string name="monitoring_description">Show CPU, memory, battery and device information.</string>
     <string name="monitoring_waiting">Waiting for the first sample…</string>
     <string name="monitoring_cpu_usage">CPU usage</string>
+    <string name="monitoring_cpu_usage_estimated">CPU usage (estimated)</string>
+    <string name="monitoring_cpu_estimate_note">Android 8+ blocks /proc/stat. This estimate comes from core clock frequencies.</string>
     <string name="monitoring_cpu_cores">CPU cores</string>
     <string name="monitoring_memory">Memory</string>
     <string name="monitoring_memory_value">%1$d MiB available of %2$d MiB</string>
