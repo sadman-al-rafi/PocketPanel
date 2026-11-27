@@ -661,8 +661,11 @@ monitoring follow-up; the current tree still needs its own CI run.
   and 5 pre-existing warnings. The debug APK is 28,031,631 bytes (sha256
   `f34962f3bdf5a259a509bae4200dcdf9c6cc3318a9783d7bad4c1fab4b3559bd`).
   `scripts/check-static.sh` passes 111/111.
-- Not verified: settings persistence on a device, overlay consent flow,
-  the 2x2 grid and drag smoothness.
+- Device test of run 40 reported an immediate crash when enabling the
+  floating panel. Cause: `OverlayService` constructed `SystemInfoRepository`
+  and `NetworkMonitor` in field initializers, before Android attached the
+  service Context. Fixed in run 42 (commit `0f03773`) by creating both in
+  `onCreate()`; retest pending.
 
 ---
 
