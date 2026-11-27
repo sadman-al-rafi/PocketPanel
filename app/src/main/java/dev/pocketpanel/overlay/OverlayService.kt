@@ -50,8 +50,10 @@ class OverlayService : Service() {
 
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var vpnRepository: VpnRepository
-    private val systemInfoRepository = SystemInfoRepository(this)
-    private val networkMonitor = NetworkMonitor(this)
+    // These need an attached Context, so they are created in onCreate,
+    // not in field initializers (which run before Service.attach).
+    private lateinit var systemInfoRepository: SystemInfoRepository
+    private lateinit var networkMonitor: NetworkMonitor
     private var monitoringJob: Job? = null
     private var controller: OverlayWindowController? = null
     private var starting = false
@@ -62,6 +64,8 @@ class OverlayService : Service() {
         val app = application as PocketPanelApplication
         settingsRepository = app.settingsRepository
         vpnRepository = app.vpnRepository
+        systemInfoRepository = SystemInfoRepository(applicationContext)
+        networkMonitor = NetworkMonitor(applicationContext)
         createNotificationChannel()
         isRunning = true
     }
