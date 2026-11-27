@@ -55,10 +55,11 @@ As of M2 the script runs 75 checks.
 These checks are structural. They cannot prove that the code compiles
 or that the UI renders; only an authorized CI run can do that.
 
-## 3. Build Verification (authorized runs only)
+## 3. Build Verification (CI on push)
 
-The committed Gradle wrapper selects Gradle 9.6.0 (D011). An authorized
-run of `.github/workflows/verify-toolchain.yml` executes, in order:
+The committed Gradle wrapper selects Gradle 9.6.0 (D011). A push to
+`main` runs `.github/workflows/verify-toolchain.yml`, which executes,
+in order:
 
     ./gradlew --version                     # wrapper + launcher JVM
     ./gradlew buildEnvironment              # resolved plugins, KGP version
@@ -441,4 +442,22 @@ Every test report must state:
 - Known limitations and anything that could not be verified.
 
 Never claim tests were performed when they were not. A workflow that
-has not been authorized and run has no result.
+has not run has no result.
+
+## 16. Final Verification Result (M11)
+
+Executed 2026-11-27:
+- CI run `46024946175` (run 49, commit `3f70dde`): build, lint and unit
+  tests succeeded; 49/49 JVM tests, 0 failures; 0 lint errors and 5
+  pre-existing warnings.
+- `scripts/check-static.sh`: 111/111 checks.
+- Debug APK: 28,031,663 bytes, sha256
+  `b1b0f29cf679d6dcb325bd1cd5dd01c4ba91c89f5f2b613070a627d4204f3c37`.
+
+User-reported on a test device:
+- App launch, overlay enable/disable, dragging, VPN connect/disconnect
+  with consent, 2x2 monitoring grid, CPU fallback, ping, theme,
+  settings persistence and layout presets all work.
+
+Not run: instrumented tests (no emulator in CI), full API 26-36 matrix.
+These are recorded as limitations in `docs/ROADMAP.md` (M11).

@@ -683,8 +683,7 @@ monitoring follow-up; the current tree still needs its own CI run.
 ---
 
 ## M11 — Final Verification
-Status: [~] Started 2026-11-27. Device verification reported by the
-project owner; final CI run and report pending.
+Status: [✓] Completed 2026-11-27.
 
 ### Objectives
 - Final regression testing.
@@ -695,12 +694,50 @@ project owner; final CI run and report pending.
 - APK packaging.
 
 ### Acceptance Criteria
-- [ ] All required milestones verified.
-- [ ] Known limitations documented.
-- [ ] Final build succeeds.
-- [ ] APK generated.
-- [ ] Installation tested.
-- [ ] Final report produced.
+- [x] All required milestones verified (M0a, M0b, M1-M7 and M10; M8 and
+      M9 were removed from the roadmap).
+- [x] Known limitations documented below.
+- [x] Final build succeeds.
+- [x] APK generated.
+- [x] Installation tested by the project owner on a test device.
+- [x] Final report produced below.
+
+### Final Verification Report
+
+Build environment: CI `ubuntu-24.04`, JDK 17, Gradle 9.6.0, AGP 9.5.2,
+Kotlin 2.4.21, compileSdk 37.1, minSdk 26, targetSdk 36.
+
+- CI run `46024946175` (run 49, commit `3f70dde`): `assembleDebug`,
+  `lintDebug` and `testDebugUnitTest` all succeeded.
+- **49/49 JVM tests**, 0 failures.
+- Lint: 0 errors, 5 pre-existing warnings (no new issue).
+- `scripts/check-static.sh`: 111/111 checks.
+- Debug APK: **28,031,663 bytes**, sha256
+  `b1b0f29cf679d6dcb325bd1cd5dd01c4ba91c89f5f2b613070a627d4204f3c37`.
+- Device verification reported by the project owner: app launch,
+  floating-panel enable/disable, smooth dragging, overlay VPN
+  connect/disconnect and consent without opening the app, the 2x2
+  monitoring grid, CPU fallback, ping, theme, settings persistence and
+  layout presets.
+
+### Known Limitations
+- No emulator is provisioned, so instrumented tests are not executed in
+  CI; they remain in the repository.
+- CPU usage is a clearly labelled estimate where `/proc/stat` is blocked
+  by Android 8+ (D025).
+- GPU identity may be unavailable on devices where an EGL context cannot
+  be created. GPU utilization and FPS are intentionally not reported.
+- Thermal status/headroom were removed at the owner's request; only
+  battery temperature is available.
+- Elevated access (Shizuku/root) is not implemented; unsupported metrics
+  stay explicitly unavailable.
+- The overlay consent helper is started from a service and relies on the
+  visible overlay exemption for background activity starts. This was
+  confirmed on the owner's device but may vary by OEM.
+- One WireGuard tunnel can be active per Android user/profile; system
+  consent is required before the first connection.
+- Device verification was performed by one owner on their test devices,
+  not across the full API 26-36 matrix in `docs/TESTING.md`.
 
 ---
 
