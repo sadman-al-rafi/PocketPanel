@@ -125,6 +125,7 @@ fun MainScreen(
                         onRemove = onVpnRemove,
                         onDismissMessage = onVpnDismissMessage,
                     )
+                    HardwareCard(deviceInfo = deviceInfo)
                 }
             }
         }

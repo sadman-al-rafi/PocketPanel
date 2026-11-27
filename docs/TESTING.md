@@ -295,11 +295,15 @@ Specific checks:
 - Battery: level, status, temperature and voltage match system
   settings/info; properties returning `Integer.MIN_VALUE` show as
   unavailable.
-- Thermal: status enum shown only on API 29+; headroom only on API 30+;
-  thresholds only on API 35+.
+- Thermal: status enum shown only on API 29+; below that the card says
+  "Not supported on this Android version". Headroom (API 30+) is a
+  fraction, with 1.00 meaning severe throttling; NaN shows "Not
+  available". Status is never presented as a temperature.
+- GPU: renderer, vendor and OpenGL ES strings are shown when the EGL
+  context can be created; otherwise "Not available". Utilization and
+  FPS are never displayed.
 - Network: throughput changes with real traffic; connection type
   updates on Wi-Fi/mobile switch.
-- GPU: never displays a utilization percentage or "FPS".
 
 Polling and lifecycle:
 - Sampling stops when the panel is collapsed.

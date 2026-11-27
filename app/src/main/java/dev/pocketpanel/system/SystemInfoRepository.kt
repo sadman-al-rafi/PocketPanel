@@ -19,11 +19,18 @@ class SystemInfoRepository(context: Context) {
 
     private val appContext: Context = context.applicationContext
     private val cpuUsageSampler = CpuUsageSampler()
+    private val thermalProvider = ThermalProvider(context)
+    private val gpuInfoProvider = GpuInfoProvider()
 
     fun deviceInfoFlow(intervalMillis: Long): Flow<DeviceInfo> = flow {
         val safeInterval = intervalMillis.coerceAtLeast(MIN_INTERVAL_MILLIS)
         while (currentCoroutineContext().isActive) {
-            emit(DeviceInfo.load(appContext, cpuUsageSampler.sample()))
+            val hardware = HardwareSnapshot(
+                cpuUsage = cpuUsageSampler.sample(),
+                thermal = thermalProvider.snapshot(),
+                gpu = gpuInfoProvider.info(),
+            )
+            emit(DeviceInfo.load(appContext, hardware))
             delay(safeInterval)
         }
     }.flowOn(Dispatchers.Default)

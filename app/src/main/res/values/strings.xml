@@ -126,4 +126,25 @@
     <string name="vpn_error_syntax">The configuration has a syntax error.</string>
     <string name="vpn_error_unknown_attribute">The configuration contains an unknown setting.</string>
     <string name="vpn_error_other">The configuration could not be parsed.</string>
+
+    <!-- M7 advanced hardware metrics -->
+    <string name="hardware_advanced">Advanced hardware</string>
+    <string name="hardware_monitoring_off">Turn on monitoring to see hardware information.</string>
+    <string name="hardware_gpu_renderer">GPU renderer</string>
+    <string name="hardware_gpu_vendor">GPU vendor</string>
+    <string name="hardware_opengl_es">OpenGL ES</string>
+    <string name="hardware_gpu_note">GPU utilization and FPS are not available through public Android APIs.</string>
+    <string name="hardware_thermal_status">Thermal status</string>
+    <string name="hardware_thermal_headroom">Thermal load (headroom)</string>
+    <string name="hardware_thermal_headroom_value">%1$.2f (1.00 = severe throttling)</string>
+    <string name="hardware_thermal_note">Thermal status is a coarse throttling state, not a temperature.</string>
+    <string name="hardware_thermal_unsupported">Not supported on this Android version</string>
+    <string name="thermal_none">None</string>
+    <string name="thermal_light">Light</string>
+    <string name="thermal_moderate">Moderate</string>
+    <string name="thermal_severe">Severe</string>
+    <string name="thermal_critical">Critical</string>
+    <string name="thermal_emergency">Emergency</string>
+    <string name="thermal_shutdown">Shutdown</string>
+    <string name="thermal_unknown">Unknown</string>
 </resources>

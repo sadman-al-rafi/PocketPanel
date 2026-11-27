@@ -38,16 +38,24 @@ data class DeviceInfo(
     val isCharging: Boolean? = null,
     /** Raw [BatteryManager] health constant, or null when unavailable. */
     val batteryHealth: Int? = null,
+    /** Coarse thermal throttling state, or null on API 26-28 or on failure. */
+    val thermalStatus: ThermalLevel? = null,
+    /** Thermal envelope fraction in use, or null on API 26-29 or on failure. */
+    val thermalHeadroom: Float? = null,
+    /** GPU identity from OpenGL ES, or null when no context can be created. */
+    val gpuRenderer: String? = null,
+    val gpuVendor: String? = null,
+    val glVersion: String? = null,
 ) {
     companion object {
 
         /**
          * Reads a fresh snapshot.
          *
-         * @param cpuUsage the latest sample from [CpuUsageSampler], or null
-         *   when no CPU source is available on this device.
+         * @param hardware the latest CPU, thermal and GPU readings, or an
+         *   empty snapshot when no source is available on this device.
          */
-        fun load(context: Context, cpuUsage: CpuUsage? = null): DeviceInfo {
+        fun load(context: Context, hardware: HardwareSnapshot = HardwareSnapshot()): DeviceInfo {
             val appContext = context.applicationContext
             val memory = readMemory(appContext)
             val battery = readBattery(appContext)
@@ -56,8 +64,8 @@ data class DeviceInfo(
                 apiLevel = Build.VERSION.SDK_INT,
                 model = Build.MODEL,
                 manufacturer = Build.MANUFACTURER,
-                cpuUsagePercent = cpuUsage?.percent,
-                cpuUsageIsEstimate = cpuUsage?.estimated ?: false,
+                cpuUsagePercent = hardware.cpuUsage?.percent,
+                cpuUsageIsEstimate = hardware.cpuUsage?.estimated ?: false,
                 cpuCount = Runtime.getRuntime().availableProcessors().takeIf { it > 0 },
                 totalMemoryBytes = memory.totalBytes,
                 availableMemoryBytes = memory.availableBytes,
@@ -65,6 +73,11 @@ data class DeviceInfo(
                 batteryTemperatureCelsius = battery.temperatureCelsius,
                 isCharging = battery.isCharging,
                 batteryHealth = battery.health,
+                thermalStatus = hardware.thermal.status,
+                thermalHeadroom = hardware.thermal.headroom,
+                gpuRenderer = hardware.gpu?.renderer,
+                gpuVendor = hardware.gpu?.vendor,
+                glVersion = hardware.gpu?.glVersion,
             )
         }
 

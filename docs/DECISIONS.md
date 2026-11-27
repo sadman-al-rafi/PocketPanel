@@ -1096,4 +1096,79 @@ new checks for the fallback and the estimate label. CI run
 5 pre-existing warnings) and 45/45 JVM tests; 7 of them are new
 `CpuUsageMathTest` cases. The debug APK is 27,990,083 bytes (sha256
 `7d5aa1258252518e17f474ceb4c1e578d673f930037bb01d25ff77aa3eab86b5`).
-The CPU row itself still needs verification on a test device.
+The CPU row was later confirmed working on a test device by the project
+owner.
+
+### D026 — GPU and Thermal Sources
+
+Date: 2026-11-27
+Status: Accepted.
+
+Context: M7 requires GPU information where supported and additional
+hardware metrics. The project forbids fabricated GPU, temperature and FPS
+readings (D009).
+
+Decision:
+- Do not report GPU utilization or FPS. Android has no public API for
+  either; a number inferred from a GPU name or a clock frequency would be
+  a fabrication.
+- Read GPU identity with the documented OpenGL ES APIs: create a
+  1x1 pbuffer EGL context, query `GL_RENDERER`, `GL_VENDOR` and
+  `GL_VERSION`, then release the context. Cache the result, including
+  failure, so unsupported devices do not retry on every tick.
+- Read thermal status with `PowerManager.getCurrentThermalStatus()` on
+  API 29+, and thermal headroom with `getThermalHeadroom(0)` on API 30+.
+  Treat NaN and exceptions as unavailable.
+- Label thermal status as a coarse throttling state, never as a
+  temperature. Show "Not supported on this Android version" below the
+  owning API level and "Not available" when a call yields no value.
+- Do not sample `getThermalHeadroom` faster than about once per second;
+  the existing 1-10 second monitoring interval satisfies this.
+- Defer the API 36 headroom listener and API 35 threshold map: they add
+  callback lifecycle complexity without a new user-visible reading.
+
+Alternatives considered:
+- Vendor GPU sysfs nodes: rejected; unreadable to apps and not an SDK
+  contract.
+- Deriving "GPU load" from renderer strings or clock frequencies:
+  rejected as fabricated.
+- CPU thermal-zone sysfs: rejected in D006; still rejected here.
+- Reporting `getBatteryDischargePrediction()` as a hardware reading:
+  deferred; it is a time estimate, not a hardware measurement.
+
+Compatibility notes: `EGL14` is API 17+, `GLES20` is API 8+, thermal
+status is API 29+ and thermal headroom is API 30+. No new permission or
+dependency is needed.
+
+Verified sources (checked 2026-11-27):
+- https://developer.android.com/reference/android/opengl/GLES20
+- https://developer.android.com/reference/android/opengl/EGL14
+- https://developer.android.com/reference/android/os/PowerManager
+
+### D027 — Shizuku Evaluation
+
+Date: 2026-11-27
+Status: Accepted (evaluation only).
+
+Context: M7 asks for an evaluation of optional Shizuku integration; M8 is
+the milestone for implementing it.
+
+Decision:
+- M7 adds no Shizuku, root or any other elevated code path. All M7
+  readings come from standard SDK APIs.
+- Elevated access, if added in M8, must sit behind a capability boundary
+  that reports whether it is available, with a standard-mode
+  implementation that needs no extra permission. UI and monitoring code
+  must not call Shizuku directly.
+- Shizuku may unlock `/proc` and vendor sysfs readings on devices where
+  standard APIs are unavailable, but it requires an optional user
+  setup and must never be required for the app to work.
+
+Alternatives considered:
+- Adding the Shizuku dependency in M7: rejected; it would mix an optional
+  elevated path into a milestone whose readings are all standard API.
+- Root-only access: rejected; root cannot be assumed.
+
+Consequences: every M7 metric degrades to an explicit unavailable state
+in standard mode. M8 can add an elevated provider without changing the
+monitoring UI.

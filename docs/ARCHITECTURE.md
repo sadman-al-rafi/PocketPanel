@@ -264,15 +264,22 @@ approximately 2 s for CPU/RAM while the panel is open), runs sampling on
 | `CpuUsageSampler` | `/proc/stat` deltas where readable, otherwise a labelled estimate from kernel cpufreq sysfs (`scaling_cur_freq`, `cpuinfo_min_freq`, `cpuinfo_max_freq`) | Counter deltas are best-effort; unreadable, parse failure or non-monotonic counters fall back to the estimate (D025). If neither source is readable the value is Unavailable. Estimates are marked and shown as such. |
 | `MemoryProvider` | `ActivityManager.MemoryInfo` (`totalMem`, `availMem`, `lowMemory`, `threshold`) | Public API, available on all supported devices. |
 | `BatteryProvider` | Sticky `ACTION_BATTERY_CHANGED` plus `BatteryManager.getIntProperty` | Public API. Properties that return `Integer.MIN_VALUE` are reported as Unavailable individually. |
-| `ThermalProvider` | `PowerManager.getCurrentThermalStatus()` (API 29+), `getThermalHeadroom()` (API 30+), thresholds (API 35+), headroom listener (API 36+) | Available only when the running API level provides the call; below that the metric is NotSupported. Thermal status is a coarse enum, not a temperature. |
+| `ThermalProvider` | `PowerManager.getCurrentThermalStatus()` (API 29+), `getThermalHeadroom(0)` (API 30+) | Real API readings. Below their API levels the row states "Not supported"; NaN or a thrown exception is "Not available". Status is a coarse throttling enum, not a temperature. Listener and threshold APIs are deferred (D026). |
 | `NetworkProvider` | `TrafficStats` / `ConnectivityManager` | Implemented in M5 as `NetworkMonitor`. Throughput is device-wide; per-app attribution is not exposed by `TrafficStats`. Connection type is best-effort. |
-| `GpuProvider` | None public. Optional vendor sysfs and EGL renderer string only | Always Unavailable for utilization. Renderer string may be shown as informational data, never as load. |
+| `GpuProvider` | `EGL14` pbuffer context, `GLES20.glGetString` (`GL_RENDERER`, `GL_VENDOR`, `GL_VERSION`) | Identity strings only. Cached, context released after one read. Failure is Unavailable. GPU utilization and FPS are never shown; there is no public API (D026). |
 
 Android 8+ blocks app access to `/proc/stat`, so `CpuUsageSampler` falls
 back to a clock-frequency estimate (D025). `CpuUsage` carries an
 `estimated` flag, `DeviceInfo` exposes it as `cpuUsageIsEstimate`, and
 the UI labels the row accordingly. The fallback is never presented as a
 counter measurement.
+
+M7 adds `HardwareSnapshot`, `ThermalProvider` and `GpuInfoProvider` to the
+same sampling pipeline. `SystemInfoRepository` collects them once per
+tick; the GPU provider caches its result, so only thermal and CPU values
+are re-read. `HardwareCard` shows the readings with explicit unsupported
+states. No elevated access is used; the M8 capability boundary is
+recorded in D027.
 
 M5 implements the network source as `NetworkMonitor`: the transport
 comes from `NetworkCapabilities`, and throughput is the delta between

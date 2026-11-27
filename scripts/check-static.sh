@@ -65,6 +65,12 @@ required_files=(
     "app/src/main/java/dev/pocketpanel/system/CpuUsage.kt"
     "app/src/main/java/dev/pocketpanel/system/CpuUsageMath.kt"
     "app/src/test/java/dev/pocketpanel/system/CpuUsageMathTest.kt"
+    "app/src/main/java/dev/pocketpanel/system/GpuInfo.kt"
+    "app/src/main/java/dev/pocketpanel/system/GpuInfoProvider.kt"
+    "app/src/main/java/dev/pocketpanel/system/ThermalInfo.kt"
+    "app/src/main/java/dev/pocketpanel/system/HardwareSnapshot.kt"
+    "app/src/test/java/dev/pocketpanel/system/ThermalInfoTest.kt"
+    "app/src/main/java/dev/pocketpanel/ui/main/HardwareCard.kt"
     "app/src/main/res/drawable/ic_notification.xml"
     "app/src/main/res/values/strings.xml"
     "app/src/main/res/values/themes.xml"
@@ -332,6 +338,35 @@ if grep -q 'val cpuUsageIsEstimate' \
     ok
 else
     fail "DeviceInfo does not expose the CPU estimate flag"
+fi
+
+# --- Advanced metrics -------------------------------------------------------
+
+section "Advanced metrics"
+
+gpu_provider=app/src/main/java/dev/pocketpanel/system/GpuInfoProvider.kt
+thermal_source=app/src/main/java/dev/pocketpanel/system/ThermalInfo.kt
+hardware_card=app/src/main/java/dev/pocketpanel/ui/main/HardwareCard.kt
+
+if grep -q 'GLES20.glGetString' "$gpu_provider" \
+    && grep -q 'eglDestroyContext' "$gpu_provider"; then
+    ok
+else
+    fail "GPU identity provider is missing or does not release its EGL context"
+fi
+
+if grep -q 'getThermalHeadroom' "$thermal_source" \
+    && grep -q 'Build.VERSION_CODES.R' "$thermal_source"; then
+    ok
+else
+    fail "thermal provider is missing or does not gate the headroom API"
+fi
+
+if grep -q 'hardware_thermal_unsupported' "$hardware_card" \
+    && grep -q 'hardware_gpu_note' "$hardware_card"; then
+    ok
+else
+    fail "hardware card does not label unsupported metrics"
 fi
 
 # --- VPN wiring -------------------------------------------------------------

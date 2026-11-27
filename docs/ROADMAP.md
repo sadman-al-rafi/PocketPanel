@@ -526,7 +526,8 @@ works normally on a test device.
 ---
 
 ## M7 — GPU and Advanced Metrics
-Status: [ ] Not started
+Status: [~] Started 2026-11-27. Technology validation recorded in
+D026/D027; implementation pending build and device verification.
 
 ### Objectives
 - Investigate GPU monitoring sources.
@@ -534,12 +535,47 @@ Status: [ ] Not started
 - Investigate additional hardware metrics.
 - Evaluate optional Shizuku integration.
 
+### Deliverables
+- `system/GpuInfoProvider.kt`: reads `GL_RENDERER`, `GL_VENDOR` and
+  `GL_VERSION` from a short-lived, off-screen EGL context and caches the
+  result. The context is always released.
+- `system/ThermalProvider.kt` and `ThermalInfo.kt`: real thermal status
+  (API 29+) and headroom (API 30+) from `PowerManager`, with API gating.
+- `HardwareSnapshot` plus extended `DeviceInfo` for the new readings.
+- `ui/main/HardwareCard.kt` showing GPU identity and thermal readings,
+  explicit unsupported states, and a note that GPU utilization and FPS
+  are not available.
+- JVM tests for thermal-status mapping and documentation of the
+  Shizuku evaluation (D027).
+
 ### Acceptance Criteria
-- [ ] Supported metrics are real.
-- [ ] Unsupported metrics are clearly identified.
-- [ ] Optional elevated access is isolated.
-- [ ] Standard mode remains functional.
-- [ ] Build and tests pass.
+- [ ] Supported readings are real: GPU identity comes from OpenGL ES
+      strings; thermal values come from `PowerManager`. No percentage is
+      inferred from a name or a vendor string.
+- [ ] Unsupported readings are clearly identified: API levels below 29
+      and 30 show "Not supported on this Android version"; unreadable
+      values show "Not available". GPU utilization and FPS are never
+      displayed.
+- [ ] Optional elevated access is isolated: M7 adds no Shizuku or root
+      path. The boundary for M8 is recorded in D027.
+- [ ] Standard mode remains functional with no new permission and no
+      new dependency.
+- [ ] Build, lint and JVM tests pass in CI (D024).
+
+### Technology Validation
+- Android has no public API for GPU utilization or FPS. The documented
+  EGL/OpenGL ES string queries are identity information only (D026).
+- `PowerManager.getCurrentThermalStatus()` is API 29;
+  `getThermalHeadroom(int)` is API 30 and returns NaN when unsupported;
+  the listener is API 36. Only the first two are sampled in M7 (D026).
+- All new APIs come from the Android SDK. The toolchain is unchanged:
+  Gradle 9.6.0, AGP 9.5.2, Kotlin 2.4.21, compileSdk 37.1, minSdk 26.
+
+### Verification Requirements
+- Local static checks before pushing.
+- CI build, lint and JVM tests; record the run ID and commit.
+- Device verification of the hardware card on API 26-28, 29 and 30+.
+
 
 ---
 
