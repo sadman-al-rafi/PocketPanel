@@ -19,8 +19,8 @@ docs/DECISIONS.md. Platform constraints are recorded in sections below.
   that declares its own availability.
 - Unavailable data is represented as unavailable, never as zero, a
   placeholder value or an estimate.
-- Standard Android access is the baseline. Shizuku and root are optional
-  upgrades behind the same provider interfaces.
+- Standard Android access is the only access mode. No elevated provider
+  is scheduled.
 - Failures are handled explicitly and surfaced in the UI state.
 - No background polling that is not justified by a visible feature.
 
@@ -332,22 +332,22 @@ are used. No `QUERY_ALL_PACKAGES`.
 - No database is required at this stage. A database is introduced only
   if a demonstrated size or query need justifies Room.
 
-## 10. Optional Elevated Access Boundaries
+## 10. Elevated Access (not scheduled)
 
-- Shizuku and root are adapters behind the existing `MetricProvider`
-  interface, not alternate code paths in the UI.
-- Capability detection is runtime-only: Shizuku binder alive and
-  permission granted; root binary present and a test call succeeding.
+Shizuku and root milestones were removed from the roadmap. No elevated
+provider exists; this section records the constraint, not a planned
+feature.
+
+- All metrics come from standard Android APIs. An unavailable API yields
+  an explicit unavailable state instead of a fabricated value.
 - The M6 WireGuard client uses the standard `VpnService` API and does
   not depend on Shizuku or root.
-- Absence, revocation, or a failed elevated call degrades the affected
-  metric to Unavailable and never disables standard mode.
-- Elevated providers live in their own package so they can be audited
-  and, if needed, excluded at build time.
+- If elevated access is ever reconsidered, it must sit behind a separate
+  capability boundary that reports availability, and standard mode must
+  remain fully functional without it (D027).
 - Verified constraint: the Shizuku shell UID has limited permissions; it
-  is not equivalent to root. Shizuku also requires the separate Shizuku
-  application and a user-initiated start (root or Android 11+ wireless
-  debugging).
+  is not equivalent to root, and it requires the separate Shizuku app
+  started by the user.
 
 ## 11. Testing Strategy
 

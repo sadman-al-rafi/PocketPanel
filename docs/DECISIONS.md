@@ -74,7 +74,7 @@ Compatibility matrix:
 | lifecycle | 2.11.1 | — | Google Maven metadata | 2.12.0 is alpha |
 | core-ktx | 1.19.1 | — | Google Maven metadata | 1.20.0 is alpha |
 | datastore-preferences | 1.3.0 | — | Google Maven metadata | — |
-| Shizuku api/provider | 13.1.5 | optional, M8 only | Maven Central metadata | Not a Google Maven artifact |
+| Shizuku api/provider | 13.1.5 | evaluated only, not scheduled | Maven Central metadata | Not a Google Maven artifact |
 
 No prerelease, experimental or RC component is selected.
 
@@ -300,9 +300,10 @@ builds; this is accepted and must be visible in the UI and tests.
 
 Date: 2026-11-25
 
-Decision: Shizuku and root remain optional adapters behind the
-`MetricProvider` interface, implemented only in their authorized
-milestones (M8 and M9).
+Decision: Shizuku and root were originally planned as optional adapters
+behind the `MetricProvider` interface in milestones M8 and M9. The
+project owner removed those milestones; no elevated adapter exists. The
+standard-mode requirement still holds.
 
 Alternatives considered: none viable; mandatory elevated access
 conflicts with the project's standard-mode requirement.
@@ -320,8 +321,9 @@ Verification sources:
 - https://shizuku.rikka.app/guide/setup/
 - https://repo1.maven.org/maven2/dev/rikka/shizuku/api/maven-metadata.xml
 
-Consequences: No Shizuku or root dependency is added in M0. If added
-later, the artifact's age and maintenance status must be reassessed.
+Consequences: No Shizuku or root dependency is added. If elevated access
+is ever reconsidered, the artifact's age and maintenance status must be
+reassessed and the capability must stay optional (D027).
 
 ### D011 — Version Pinning and Upgrade Discipline
 

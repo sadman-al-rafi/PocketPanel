@@ -65,13 +65,11 @@ The user can dismiss the panel without switching applications.
 - WireGuard configurations and private keys stay on the device.
 
 ## Access Modes
-- Standard Android access.
-- Optional Shizuku access.
-- Optional root access.
+- Standard Android access only.
 
-Standard mode must remain functional without Shizuku or root. The
-WireGuard client uses the standard Android `VpnService` API and does not
-require elevated access.
+No elevated access is used. Shizuku and root milestones were removed
+from the roadmap; all readings come from standard Android APIs. The
+WireGuard client uses the standard Android `VpnService` API.
 
 ## Non-Goals for Initial Release
 - Cloud synchronization.

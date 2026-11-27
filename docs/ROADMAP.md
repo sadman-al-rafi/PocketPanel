@@ -70,7 +70,8 @@ that milestone; the build itself was verified in M0b.
 ---
 
 ## M0b — Project Generation and Build Verification
-Status: [~] Build verified 2026-11-25; launch smoke test deferred (D016)
+Status: [✓] Build verified 2026-11-25 and launch verified 2026-11-27 by
+the project owner on a test device.
 
 ### Objectives
 - Create the native Android project with the pinned toolchain.
@@ -124,8 +125,8 @@ Status: [~] Build verified 2026-11-25; launch smoke test deferred (D016)
 ---
 
 ## M1 — Application Foundation and Material You
-Status: [~] Implementation and build verified; runtime verification
-blocked by the suspended device-testing policy (D016)
+Status: [✓] Implementation, build and runtime verified. The project owner
+reported the theme and main screen working on a test device in 2026-11-27.
 
 ### Objectives
 - Establish Material 3 design system.
@@ -198,6 +199,9 @@ blocked by the suspended device-testing policy (D016)
 Status: [✓] Implemented 2026-11-26 (commit `c254da9`); M2 authorized manual
   run 45756276354 (run 13): build successful (0 lint errors, 5 warnings),
   5/5 JVM tests passed, APK 13,961,294 bytes, sha256 `49d058a479459b6507e3477e5f54fcc6bc70bae248100bd574c23fd769ec4838`.
+  Runtime overlay behavior was later verified on a device; a startup
+  crash found in the M10 follow-up was fixed in run 42 and confirmed by
+  the project owner.
 
 ### Objectives
 - Implement overlay permission handling.
@@ -286,8 +290,9 @@ was rewritten after authorized runs 14-19 failed on
 invalid placeholder code (not a toolchain incompatibility). Authorized
 manual run 45824780276 (run 20, commit `ca9ba8a`) succeeded: build,
 lint 0 errors / 5 pre-existing warnings, 15/15 JVM tests and the debug
-APK. Runtime monitoring behavior remains unverified because no device
-or emulator test was authorized at that time (D016).
+APK. The project owner later confirmed the CPU fallback works on test
+devices; overall monitoring was confirmed working in the final M11 device
+check.
 
 2026-11-27 bug fix (before M7): the CPU row was empty on every test
 device because `/proc/stat` is unreadable by apps on API 26+. D025 adds
@@ -337,8 +342,8 @@ CPU row is pending.
 ## M4 — Temperature and Hardware Discovery
 Status: [✓] Implemented 2026-11-27 (commit `ca9ba8a`). Battery
 temperature is implemented through the M3 monitoring pipeline and run
-45824780276 (run 20) verified build, lint and tests. Runtime reading
-remains unverified because no device test is authorized (D016).
+45824780276 (run 20) verified build, lint and tests. Battery
+temperature was confirmed on a device in the final M11 check.
 
 ### Objectives
 - Discover available temperature information.
@@ -526,8 +531,8 @@ works normally on a test device.
 ---
 
 ## M7 — GPU and Advanced Metrics
-Status: [✓] Implemented and build verified 2026-11-27 (CI run 28,
-commit `773e6b3`). Device verification of the hardware card pending.
+Status: [✓] Implemented and verified 2026-11-27 (CI run 28) with the
+hardware card confirmed on a test device by the project owner.
 
 ### Objectives
 - Investigate GPU monitoring sources.
@@ -588,8 +593,9 @@ commit `773e6b3`). Device verification of the hardware card pending.
 ---
 
 ## M10 — Customization and Polish
-Status: [✓] Implemented and build verified 2026-11-27 (CI run 40,
-commit `c9c52b5`). Device verification pending.
+Status: [✓] Implemented and verified 2026-11-27 (CI run 47, commit
+`d6a68d9`); the project owner confirmed the overlay VPN behavior and the
+follow-up home/panel changes on a test device.
 
 ### Objectives
 - Panel customization.
@@ -677,7 +683,8 @@ monitoring follow-up; the current tree still needs its own CI run.
 ---
 
 ## M11 — Final Verification
-Status: [ ] Not started
+Status: [~] Started 2026-11-27. Device verification reported by the
+project owner; final CI run and report pending.
 
 ### Objectives
 - Final regression testing.
