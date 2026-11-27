@@ -370,10 +370,12 @@ else
 fi
 
 if grep -q 'android:name=".VpnToggleActivity"' "$manifest" \
-    && grep -q 'FLAG_ACTIVITY_NEW_TASK' "$overlay_controller"; then
+    && grep -q 'android:taskAffinity=""' "$manifest" \
+    && grep -q 'FLAG_ACTIVITY_NEW_TASK' \
+    app/src/main/java/dev/pocketpanel/overlay/OverlayService.kt; then
     ok
 else
-    fail "overlay VPN toggle cannot request system consent"
+    fail "overlay VPN toggle cannot request system consent invisibly"
 fi
 
 if grep -q 'TestTags.OVERLAY_VPN_BUTTON' "$overlay_content" \

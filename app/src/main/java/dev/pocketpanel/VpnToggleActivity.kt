@@ -28,6 +28,7 @@ class VpnToggleActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        overridePendingTransition(0, 0)
 
         // Disconnecting never needs consent again.
         if (repository.state.value == VpnConnectionState.Connected) {

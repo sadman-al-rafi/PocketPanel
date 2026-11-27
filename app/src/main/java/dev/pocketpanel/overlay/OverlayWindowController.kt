@@ -1,7 +1,6 @@
 package dev.pocketpanel.overlay
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.PixelFormat
 import android.graphics.Point
 import android.os.Build
@@ -20,7 +19,6 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import dev.pocketpanel.R
-import dev.pocketpanel.VpnToggleActivity
 import dev.pocketpanel.settings.HandleEdge
 import dev.pocketpanel.settings.UserPreferences
 import dev.pocketpanel.ui.theme.PocketPanelTheme
@@ -43,6 +41,7 @@ class OverlayWindowController(
     context: Context,
     lifecycleOwner: SavedStateRegistryOwner,
     private val onPositionChanged: (HandleEdge, Float) -> Unit,
+    private val onVpnToggle: () -> Unit,
 ) {
 
     private val appContext = context.applicationContext
@@ -74,7 +73,7 @@ class OverlayWindowController(
                     screenOrigin = ::currentScreenOrigin,
                     vpnState = vpnState,
                     hasVpnProfile = hasVpnProfile,
-                    onVpnToggle = ::startVpnToggle,
+                    onVpnToggle = onVpnToggle,
                     monitoring = monitoring,
                 )
             }
@@ -163,12 +162,6 @@ class OverlayWindowController(
     /** Updates the 2x2 monitoring grid; null hides it. */
     fun updateMonitoring(sample: OverlayMonitoring?) {
         monitoring = sample
-    }
-
-    private fun startVpnToggle() {
-        val intent = Intent(appContext, VpnToggleActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        runCatching { appContext.startActivity(intent) }
     }
 
     /** Re-anchors the window after a rotation or other configuration change. */

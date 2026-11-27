@@ -1194,10 +1194,12 @@ Decision:
 - Overlay VPN state comes from the same `VpnRepository` used by the app,
   observed by `OverlayService` with `combine(preferences, state, profile)`.
   There is no second connection path.
-- The overlay button starts a transparent `VpnToggleActivity` with
-  `FLAG_ACTIVITY_NEW_TASK`. That Activity calls `VpnService.prepare()`
-  for result, connects on approval, records denial and then finishes.
-  Disconnecting does not re-request consent.
+- Only a connect starts `VpnToggleActivity`, with `FLAG_ACTIVITY_NEW_TASK`.
+  It uses `taskAffinity=""` and `Theme.NoDisplay`, calls
+  `VpnService.prepare()` for result, connects on approval, records denial
+  and then finishes. Disconnecting never starts an Activity: it is handled
+  directly in `OverlayService`. This prevents the app task from coming to
+  the foreground when the overlay button is used.
 - Overlay window size is derived from `HandleSize`; changing size or edge
   in settings re-anchors the window without moving the persisted vertical
   fraction.

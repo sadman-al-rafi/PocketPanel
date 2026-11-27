@@ -665,7 +665,11 @@ monitoring follow-up; the current tree still needs its own CI run.
   floating panel. Cause: `OverlayService` constructed `SystemInfoRepository`
   and `NetworkMonitor` in field initializers, before Android attached the
   service Context. Fixed in run 42 (commit `0f03773`) by creating both in
-  `onCreate()`; retest pending.
+  `onCreate()`; the owner confirmed the crash was gone.
+- On-device testing also showed the overlay VPN button bringing the app to
+  the foreground. The connect helper Activity now uses a separate task and
+  `Theme.NoDisplay`, and disconnect is handled directly in the service so
+  no Activity is started. Retest pending.
 
 ---
 

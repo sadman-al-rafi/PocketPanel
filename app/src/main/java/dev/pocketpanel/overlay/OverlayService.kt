@@ -17,11 +17,13 @@ import androidx.core.app.ServiceCompat
 import dev.pocketpanel.MainActivity
 import dev.pocketpanel.PocketPanelApplication
 import dev.pocketpanel.R
+import dev.pocketpanel.VpnToggleActivity
 import dev.pocketpanel.settings.HandleEdge
 import dev.pocketpanel.settings.SettingsRepository
 import dev.pocketpanel.settings.UserPreferences
 import dev.pocketpanel.system.NetworkMonitor
 import dev.pocketpanel.system.SystemInfoRepository
+import dev.pocketpanel.vpn.VpnConnectionState
 import dev.pocketpanel.vpn.VpnRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -110,6 +112,7 @@ class OverlayService : Service() {
                             persistHandlePosition(edge, fraction)
                         }
                     },
+                    onVpnToggle = ::onVpnToggle,
                 )
                 if (!newController.show(initial)) {
                     starting = false
@@ -166,6 +169,21 @@ class OverlayService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    /**
+     * Disconnecting needs no consent and is handled entirely here. Only a
+     * connect launches the invisible helper Activity, which requests the
+     * system consent dialog for result.
+     */
+    private fun onVpnToggle() {
+        if (vpnRepository.state.value == VpnConnectionState.Connected) {
+            vpnRepository.disconnect()
+            return
+        }
+        val intent = Intent(this, VpnToggleActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION)
+        runCatching { startActivity(intent) }
+    }
 
     /**
      * Sampling starts only while monitoring is enabled and the overlay is
