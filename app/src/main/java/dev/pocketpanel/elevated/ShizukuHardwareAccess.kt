@@ -6,6 +6,7 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import dev.pocketpanel.system.CpuUsage
 import dev.pocketpanel.system.CpuUsageMath
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
