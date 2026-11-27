@@ -1195,11 +1195,13 @@ Decision:
   observed by `OverlayService` with `combine(preferences, state, profile)`.
   There is no second connection path.
 - Only a connect starts `VpnToggleActivity`, with `FLAG_ACTIVITY_NEW_TASK`.
-  It uses `taskAffinity=""` and `Theme.NoDisplay`, calls
-  `VpnService.prepare()` for result, connects on approval, records denial
-  and then finishes. Disconnecting never starts an Activity: it is handled
-  directly in `OverlayService`. This prevents the app task from coming to
-  the foreground when the overlay button is used.
+  It uses `taskAffinity=""` and a transparent theme with no content (not
+  `Theme.NoDisplay`, which requires an immediate `finish()` and would crash
+  the consent flow on API 23+). It calls `VpnService.prepare()` for result,
+  connects on approval, records denial and then finishes. Disconnecting
+  never starts an Activity: it is handled directly in `OverlayService`.
+  This prevents the app task from coming to the foreground when the
+  overlay button is used.
 - Overlay window size is derived from `HandleSize`; changing size or edge
   in settings re-anchors the window without moving the persisted vertical
   fraction.

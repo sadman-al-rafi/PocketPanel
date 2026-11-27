@@ -1,5 +1,7 @@
 package dev.pocketpanel
 
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,6 +31,8 @@ class VpnToggleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         overridePendingTransition(0, 0)
+        window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        window.setDimAmount(0f)
 
         // Disconnecting never needs consent again.
         if (repository.state.value == VpnConnectionState.Connected) {
