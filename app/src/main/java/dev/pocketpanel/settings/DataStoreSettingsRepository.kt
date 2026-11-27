@@ -53,6 +53,8 @@ class DataStoreSettingsRepository(
                 handleEdge = HandleEdge.fromStorage(stored[Keys.HANDLE_EDGE]),
                 handleVerticalFraction = (stored[Keys.HANDLE_VERTICAL_FRACTION]
                     ?: defaults.handleVerticalFraction).coerceIn(0f, 1f),
+                handleSize = HandleSize.fromStorage(stored[Keys.HANDLE_SIZE]),
+                mainCardLayout = MainCardLayout.fromStorage(stored[Keys.MAIN_CARD_LAYOUT]),
             )
         }
 
@@ -88,6 +90,18 @@ class DataStoreSettingsRepository(
         }
     }
 
+    override suspend fun setHandleSize(size: HandleSize) {
+        dataStore.edit { stored -> stored[Keys.HANDLE_SIZE] = size.name }
+    }
+
+    override suspend fun setHandleEdge(edge: HandleEdge) {
+        dataStore.edit { stored -> stored[Keys.HANDLE_EDGE] = edge.name }
+    }
+
+    override suspend fun setMainCardLayout(layout: MainCardLayout) {
+        dataStore.edit { stored -> stored[Keys.MAIN_CARD_LAYOUT] = layout.name }
+    }
+
     private object Keys {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
@@ -96,6 +110,8 @@ class DataStoreSettingsRepository(
         val MONITORING_INTERVAL_SECONDS = intPreferencesKey("monitoring_interval_seconds")
         val HANDLE_EDGE = stringPreferencesKey("handle_edge")
         val HANDLE_VERTICAL_FRACTION = floatPreferencesKey("handle_vertical_fraction")
+        val HANDLE_SIZE = stringPreferencesKey("handle_size")
+        val MAIN_CARD_LAYOUT = stringPreferencesKey("main_card_layout")
     }
 
     private companion object {

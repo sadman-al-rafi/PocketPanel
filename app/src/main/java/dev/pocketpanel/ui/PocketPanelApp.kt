@@ -7,6 +7,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import dev.pocketpanel.settings.HandleEdge
+import dev.pocketpanel.settings.HandleSize
+import dev.pocketpanel.settings.MainCardLayout
 import dev.pocketpanel.settings.ThemeMode
 import dev.pocketpanel.ui.main.MainScreen
 import dev.pocketpanel.ui.settings.SettingsScreen
@@ -29,6 +32,9 @@ fun PocketPanelApp(
     onVpnDisconnect: () -> Unit,
     onVpnRemove: () -> Unit,
     onVpnDismissMessage: () -> Unit,
+    onHandleSizeChange: (HandleSize) -> Unit,
+    onHandleEdgeChange: (HandleEdge) -> Unit,
+    onMainCardLayoutChange: (MainCardLayout) -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -61,6 +67,11 @@ fun PocketPanelApp(
                     onNavigateBack = onNavigateBack,
                     onThemeModeSelected = onThemeModeSelected,
                     onDynamicColorChange = onDynamicColorChange,
+                    onMonitoringEnabledChange = onMonitoringEnabledChange,
+                    onMonitoringIntervalChange = onMonitoringIntervalChange,
+                    onHandleSizeChange = onHandleSizeChange,
+                    onHandleEdgeChange = onHandleEdgeChange,
+                    onMainCardLayoutChange = onMainCardLayoutChange,
                 )
             }
         }

@@ -20,12 +20,14 @@ import dev.pocketpanel.R
 import dev.pocketpanel.settings.HandleEdge
 import dev.pocketpanel.settings.SettingsRepository
 import dev.pocketpanel.settings.UserPreferences
+import dev.pocketpanel.vpn.VpnRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -44,13 +46,16 @@ class OverlayService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private lateinit var settingsRepository: SettingsRepository
+    private lateinit var vpnRepository: VpnRepository
     private var controller: OverlayWindowController? = null
     private var starting = false
     private var lifecycleStarted = false
 
     override fun onCreate() {
         super.onCreate()
-        settingsRepository = (application as PocketPanelApplication).settingsRepository
+        val app = application as PocketPanelApplication
+        settingsRepository = app.settingsRepository
+        vpnRepository = app.vpnRepository
         createNotificationChannel()
         isRunning = true
     }
@@ -105,9 +110,14 @@ class OverlayService : Service() {
                 controller = newController
                 starting = false
                 try {
-                    settingsRepository.preferences.collect { preferences ->
+                    combine(
+                        settingsRepository.preferences,
+                        vpnRepository.state,
+                        vpnRepository.profile,
+                    ) { preferences, vpnState, profile ->
                         newController.update(preferences)
-                    }
+                        newController.updateVpnState(vpnState, profile != null)
+                    }.collect()
                 } catch (error: CancellationException) {
                     throw error
                 } catch (error: Exception) {

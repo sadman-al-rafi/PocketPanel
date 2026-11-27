@@ -24,6 +24,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,6 +36,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import dev.pocketpanel.R
+import dev.pocketpanel.settings.HandleEdge
+import dev.pocketpanel.settings.HandleSize
+import dev.pocketpanel.settings.MainCardLayout
 import dev.pocketpanel.settings.ThemeMode
 import dev.pocketpanel.settings.UserPreferences
 import dev.pocketpanel.ui.TestTags
@@ -49,6 +53,11 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onThemeModeSelected: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
+    onMonitoringEnabledChange: (Boolean) -> Unit,
+    onMonitoringIntervalChange: (Int) -> Unit,
+    onHandleSizeChange: (HandleSize) -> Unit,
+    onHandleEdgeChange: (HandleEdge) -> Unit,
+    onMainCardLayoutChange: (MainCardLayout) -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -98,6 +107,76 @@ fun SettingsScreen(
                         enabled = preferences.dynamicColor,
                         onValueChange = onDynamicColorChange,
                     )
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                    SectionHeader(text = stringResource(R.string.settings_main_screen))
+                    MainCardLayout.entries.forEach { layout ->
+                        ChoiceRow(
+                            label = stringResource(layout.labelRes()),
+                            description = stringResource(layout.descriptionRes()),
+                            selected = preferences.mainCardLayout == layout,
+                            onClick = { onMainCardLayoutChange(layout) },
+                            modifier = Modifier.testTag(layout.testTag),
+                        )
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                    SectionHeader(text = stringResource(R.string.settings_handle))
+                    HandleSize.entries.forEach { size ->
+                        ChoiceRow(
+                            label = stringResource(size.labelRes()),
+                            description = stringResource(size.descriptionRes()),
+                            selected = preferences.handleSize == size,
+                            onClick = { onHandleSizeChange(size) },
+                            modifier = Modifier.testTag(size.testTag),
+                        )
+                    }
+                    HandleEdge.entries.forEach { edge ->
+                        ChoiceRow(
+                            label = stringResource(edge.labelRes()),
+                            description = stringResource(edge.descriptionRes()),
+                            selected = preferences.handleEdge == edge,
+                            onClick = { onHandleEdgeChange(edge) },
+                            modifier = Modifier.testTag(edge.testTag),
+                        )
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                    SectionHeader(text = stringResource(R.string.monitoring))
+                    SwitchRow(
+                        label = stringResource(R.string.monitoring),
+                        description = stringResource(R.string.monitoring_description),
+                        checked = preferences.monitoringEnabled,
+                        onValueChange = onMonitoringEnabledChange,
+                        modifier = Modifier.testTag(TestTags.SETTINGS_MONITORING_SWITCH),
+                    )
+                    if (preferences.monitoringEnabled) {
+                        Text(
+                            text = stringResource(R.string.monitoring_interval),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            MONITORING_INTERVALS.forEach { seconds ->
+                                TextButton(onClick = { onMonitoringIntervalChange(seconds) }) {
+                                    Text(
+                                        text = stringResource(
+                                            R.string.monitoring_interval_seconds,
+                                            seconds,
+                                        ),
+                                        color = if (preferences.monitoringIntervalSeconds == seconds) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                    }
 
                     Text(
                         text = stringResource(R.string.settings_saved_note),
@@ -211,3 +290,126 @@ private val ThemeMode.testTag: String
         ThemeMode.LIGHT -> TestTags.THEME_LIGHT
         ThemeMode.DARK -> TestTags.THEME_DARK
     }
+
+@Composable
+private fun ChoiceRow(
+    label: String,
+    description: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
+            .heightIn(min = 64.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = null)
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = label, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SwitchRow(
+    label: String,
+    description: String,
+    checked: Boolean,
+    onValueChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .toggleable(
+                value = checked,
+                role = Role.Switch,
+                onValueChange = onValueChange,
+            )
+            .heightIn(min = 64.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = label, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Switch(checked = checked, onCheckedChange = null)
+    }
+}
+
+@Composable
+private fun MainCardLayout.labelRes(): Int = when (this) {
+    MainCardLayout.STANDARD -> R.string.layout_standard
+    MainCardLayout.FOCUS -> R.string.layout_focus
+    MainCardLayout.MINIMAL -> R.string.layout_minimal
+}
+
+@Composable
+private fun MainCardLayout.descriptionRes(): Int = when (this) {
+    MainCardLayout.STANDARD -> R.string.layout_standard_description
+    MainCardLayout.FOCUS -> R.string.layout_focus_description
+    MainCardLayout.MINIMAL -> R.string.layout_minimal_description
+}
+
+@Composable
+private fun HandleSize.labelRes(): Int = when (this) {
+    HandleSize.COMPACT -> R.string.handle_size_compact
+    HandleSize.NORMAL -> R.string.handle_size_normal
+}
+
+@Composable
+private fun HandleSize.descriptionRes(): Int = when (this) {
+    HandleSize.COMPACT -> R.string.handle_size_compact_description
+    HandleSize.NORMAL -> R.string.handle_size_normal_description
+}
+
+@Composable
+private fun HandleEdge.labelRes(): Int = when (this) {
+    HandleEdge.LEFT -> R.string.handle_edge_left
+    HandleEdge.RIGHT -> R.string.handle_edge_right
+}
+
+@Composable
+private fun HandleEdge.descriptionRes(): Int = when (this) {
+    HandleEdge.LEFT -> R.string.handle_edge_left_description
+    HandleEdge.RIGHT -> R.string.handle_edge_right_description
+}
+
+private val MainCardLayout.testTag: String
+    get() = when (this) {
+        MainCardLayout.STANDARD -> TestTags.LAYOUT_STANDARD
+        MainCardLayout.FOCUS -> TestTags.LAYOUT_FOCUS
+        MainCardLayout.MINIMAL -> TestTags.LAYOUT_MINIMAL
+    }
+
+private val HandleSize.testTag: String
+    get() = when (this) {
+        HandleSize.COMPACT -> TestTags.HANDLE_SIZE_COMPACT
+        HandleSize.NORMAL -> TestTags.HANDLE_SIZE_NORMAL
+    }
+
+private val HandleEdge.testTag: String
+    get() = when (this) {
+        HandleEdge.LEFT -> TestTags.HANDLE_EDGE_LEFT
+        HandleEdge.RIGHT -> TestTags.HANDLE_EDGE_RIGHT
+    }
+
+private val MONITORING_INTERVALS = listOf(1, 2, 5, 10)

@@ -35,6 +35,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.pocketpanel.R
+import dev.pocketpanel.settings.MainCardLayout
 import dev.pocketpanel.settings.UserPreferences
 import dev.pocketpanel.system.DeviceInfo
 import dev.pocketpanel.system.NetworkInfo
@@ -98,25 +99,33 @@ fun MainScreen(
                     modifier = Modifier.widthIn(max = 640.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    WelcomeCard()
-                    OverlayCard(
-                        preferences = preferences,
-                        permissionGranted = overlayPermissionGranted,
-                        notificationPermissionGranted = notificationPermissionGranted,
-                        onOverlayEnabledChange = onOverlayEnabledChange,
-                        onRequestOverlayPermission = onRequestOverlayPermission,
-                    )
-                    AppearanceCard(
-                        preferences = preferences,
-                        onOpenSettings = onOpenSettings,
-                    )
-                    MonitoringCard(
-                        preferences = preferences,
-                        deviceInfo = deviceInfo,
-                        networkInfo = networkInfo,
-                        onMonitoringEnabledChange = onMonitoringEnabledChange,
-                        onMonitoringIntervalChange = onMonitoringIntervalChange,
-                    )
+                    val layout = preferences.mainCardLayout
+                    if (layout == MainCardLayout.STANDARD) {
+                        WelcomeCard()
+                        OverlayCard(
+                            preferences = preferences,
+                            permissionGranted = overlayPermissionGranted,
+                            notificationPermissionGranted = notificationPermissionGranted,
+                            onOverlayEnabledChange = onOverlayEnabledChange,
+                            onRequestOverlayPermission = onRequestOverlayPermission,
+                        )
+                    }
+                    if (layout != MainCardLayout.FOCUS) {
+                        AppearanceCard(
+                            preferences = preferences,
+                            onOpenSettings = onOpenSettings,
+                        )
+                    }
+                    if (layout != MainCardLayout.MINIMAL) {
+                        MonitoringCard(
+                            preferences = preferences,
+                            deviceInfo = deviceInfo,
+                            networkInfo = networkInfo,
+                            onMonitoringEnabledChange = onMonitoringEnabledChange,
+                            onMonitoringIntervalChange = onMonitoringIntervalChange,
+                        )
+                        HardwareCard(deviceInfo = deviceInfo)
+                    }
                     VpnCard(
                         vpn = vpn,
                         onImportConfig = onVpnImportConfig,
@@ -125,7 +134,6 @@ fun MainScreen(
                         onRemove = onVpnRemove,
                         onDismissMessage = onVpnDismissMessage,
                     )
-                    HardwareCard(deviceInfo = deviceInfo)
                 }
             }
         }

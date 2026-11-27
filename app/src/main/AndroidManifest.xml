@@ -34,6 +34,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Launched by the overlay to request VPN consent. -->
+        <activity
+            android:name=".VpnToggleActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <service
             android:name=".overlay.OverlayService"
             android:exported="false"

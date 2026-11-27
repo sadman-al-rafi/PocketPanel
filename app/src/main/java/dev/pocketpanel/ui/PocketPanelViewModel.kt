@@ -6,6 +6,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import dev.pocketpanel.settings.HandleEdge
+import dev.pocketpanel.settings.HandleSize
+import dev.pocketpanel.settings.MainCardLayout
 import dev.pocketpanel.settings.SettingsRepository
 import dev.pocketpanel.settings.ThemeMode
 import dev.pocketpanel.settings.UserPreferences
@@ -156,6 +159,18 @@ class PocketPanelViewModel(
 
     fun setMonitoringIntervalSeconds(seconds: Int) {
         viewModelScope.launch { settingsRepository.setMonitoringIntervalSeconds(seconds) }
+    }
+
+    fun setHandleSize(size: HandleSize) {
+        viewModelScope.launch { settingsRepository.setHandleSize(size) }
+    }
+
+    fun setHandleEdge(edge: HandleEdge) {
+        viewModelScope.launch { settingsRepository.setHandleEdge(edge) }
+    }
+
+    fun setMainCardLayout(layout: MainCardLayout) {
+        viewModelScope.launch { settingsRepository.setMainCardLayout(layout) }
     }
 
     fun disconnectVpn() {

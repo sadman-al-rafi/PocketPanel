@@ -62,6 +62,10 @@ required_files=(
     "app/src/main/java/dev/pocketpanel/overlay/OverlayWindowController.kt"
     "app/src/test/java/dev/pocketpanel/overlay/OverlayGeometryTest.kt"
     "app/src/test/java/dev/pocketpanel/settings/HandleEdgeTest.kt"
+    "app/src/main/java/dev/pocketpanel/settings/HandleSize.kt"
+    "app/src/main/java/dev/pocketpanel/settings/MainCardLayout.kt"
+    "app/src/test/java/dev/pocketpanel/settings/SettingsEnumsTest.kt"
+    "app/src/main/java/dev/pocketpanel/VpnToggleActivity.kt"
     "app/src/main/java/dev/pocketpanel/system/CpuUsage.kt"
     "app/src/main/java/dev/pocketpanel/system/CpuUsageMath.kt"
     "app/src/test/java/dev/pocketpanel/system/CpuUsageMathTest.kt"
@@ -338,6 +342,45 @@ if grep -q 'val cpuUsageIsEstimate' \
     ok
 else
     fail "DeviceInfo does not expose the CPU estimate flag"
+fi
+
+# --- M10 customization ------------------------------------------------------
+
+section "M10 customization"
+
+settings_store=app/src/main/java/dev/pocketpanel/settings/DataStoreSettingsRepository.kt
+settings_screen=app/src/main/java/dev/pocketpanel/ui/settings/SettingsScreen.kt
+overlay_controller=app/src/main/java/dev/pocketpanel/overlay/OverlayWindowController.kt
+overlay_content=app/src/main/java/dev/pocketpanel/overlay/OverlayContent.kt
+
+if grep -q 'handle_size' "$settings_store" \
+    && grep -q 'main_card_layout' "$settings_store" \
+    && grep -q 'setHandleSize' "$settings_store"; then
+    ok
+else
+    fail "M10 customization settings are not persisted"
+fi
+
+if grep -q 'MainCardLayout.entries' "$settings_screen" \
+    && grep -q 'HandleSize.entries' "$settings_screen"; then
+    ok
+else
+    fail "settings screen is missing the customization options"
+fi
+
+if grep -q 'android:name=".VpnToggleActivity"' "$manifest" \
+    && grep -q 'FLAG_ACTIVITY_NEW_TASK' "$overlay_controller"; then
+    ok
+else
+    fail "overlay VPN toggle cannot request system consent"
+fi
+
+if grep -q 'TestTags.OVERLAY_VPN_BUTTON' "$overlay_content" \
+    && grep -q 'vpnRepository.state' \
+    app/src/main/java/dev/pocketpanel/overlay/OverlayService.kt; then
+    ok
+else
+    fail "overlay VPN control does not use the shared repository state"
 fi
 
 # --- Advanced metrics -------------------------------------------------------

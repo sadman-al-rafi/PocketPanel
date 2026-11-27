@@ -24,4 +24,10 @@ interface SettingsRepository {
 
     /** Persists the resting edge and vertical position of the handle atomically. */
     suspend fun setHandlePosition(edge: HandleEdge, verticalFraction: Float)
+
+    suspend fun setHandleSize(size: HandleSize)
+
+    suspend fun setHandleEdge(edge: HandleEdge)
+
+    suspend fun setMainCardLayout(layout: MainCardLayout)
 }

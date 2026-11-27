@@ -1,6 +1,7 @@
 package dev.pocketpanel.overlay
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.PixelFormat
 import android.graphics.Point
 import android.os.Build
@@ -19,9 +20,11 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import dev.pocketpanel.R
+import dev.pocketpanel.VpnToggleActivity
 import dev.pocketpanel.settings.HandleEdge
 import dev.pocketpanel.settings.UserPreferences
 import dev.pocketpanel.ui.theme.PocketPanelTheme
+import dev.pocketpanel.vpn.VpnConnectionState
 import kotlin.math.roundToInt
 
 /**
@@ -69,6 +72,9 @@ class OverlayWindowController(
                     onDrag = ::onDrag,
                     onDragEnd = ::onDragEnd,
                     screenOrigin = ::currentScreenOrigin,
+                    vpnState = vpnState,
+                    hasVpnProfile = hasVpnProfile,
+                    onVpnToggle = ::startVpnToggle,
                 )
             }
         }
@@ -76,6 +82,8 @@ class OverlayWindowController(
 
     private var preferences by mutableStateOf(UserPreferences())
     private var expanded by mutableStateOf(false)
+    private var vpnState by mutableStateOf<VpnConnectionState>(VpnConnectionState.Disconnected)
+    private var hasVpnProfile by mutableStateOf(false)
 
     private var layoutParams: WindowManager.LayoutParams? = null
     private var attached = false
@@ -135,7 +143,25 @@ class OverlayWindowController(
 
     /** Applies a new settings snapshot without touching the window position. */
     fun update(newPreferences: UserPreferences) {
+        val sizeChanged = preferences.handleSize != newPreferences.handleSize
+        val edgeChanged = preferences.handleEdge != newPreferences.handleEdge
         preferences = newPreferences
+        if (sizeChanged || edgeChanged) {
+            edge = newPreferences.handleEdge
+            if (attached) applyPlacement(expanded)
+        }
+    }
+
+    /** Updates the VPN row from the shared repository state. */
+    fun updateVpnState(state: VpnConnectionState, profileAvailable: Boolean) {
+        vpnState = state
+        hasVpnProfile = profileAvailable
+    }
+
+    private fun startVpnToggle() {
+        val intent = Intent(appContext, VpnToggleActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { appContext.startActivity(intent) }
     }
 
     /** Re-anchors the window after a rotation or other configuration change. */
@@ -264,12 +290,13 @@ class OverlayWindowController(
 
     private fun sizeFor(expanded: Boolean): Pair<Int, Int> {
         val density = appContext.resources.displayMetrics.density
+        val size = OverlayDimensions.forSize(preferences.handleSize)
         return if (expanded) {
-            (OverlayDimensions.expandedWidth.value * density).roundToInt() to
-                (OverlayDimensions.expandedHeight.value * density).roundToInt()
+            (size.expandedWidth.value * density).roundToInt() to
+                (size.expandedHeight.value * density).roundToInt()
         } else {
-            (OverlayDimensions.handleWidth.value * density).roundToInt() to
-                (OverlayDimensions.handleHeight.value * density).roundToInt()
+            (size.handleWidth.value * density).roundToInt() to
+                (size.handleHeight.value * density).roundToInt()
         }
     }
 

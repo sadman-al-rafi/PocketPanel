@@ -15,6 +15,8 @@ data class UserPreferences(
     val monitoringIntervalSeconds: Int = DEFAULT_MONITORING_INTERVAL_SECONDS,
     val handleEdge: HandleEdge = HandleEdge.RIGHT,
     val handleVerticalFraction: Float = 0.5f,
+    val handleSize: HandleSize = HandleSize.NORMAL,
+    val mainCardLayout: MainCardLayout = MainCardLayout.STANDARD,
 ) {
     companion object {
         const val MIN_MONITORING_INTERVAL_SECONDS = 1

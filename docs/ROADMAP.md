@@ -592,7 +592,8 @@ commit `773e6b3`). Device verification of the hardware card pending.
 ---
 
 ## M10 — Customization and Polish
-Status: [ ] Not started
+Status: [~] Started 2026-11-27. Implementation pending CI and device
+verification.
 
 ### Objectives
 - Panel customization.

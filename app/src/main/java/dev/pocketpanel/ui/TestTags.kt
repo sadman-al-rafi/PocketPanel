@@ -17,4 +17,13 @@ object TestTags {
     const val VPN_CONNECT_BUTTON = "vpn_connect_button"
     const val VPN_IMPORT_BUTTON = "vpn_import_button"
     const val VPN_REMOVE_BUTTON = "vpn_remove_button"
+    const val OVERLAY_VPN_BUTTON = "overlay_vpn_button"
+    const val SETTINGS_MONITORING_SWITCH = "settings_monitoring_switch"
+    const val LAYOUT_STANDARD = "layout_standard"
+    const val LAYOUT_FOCUS = "layout_focus"
+    const val LAYOUT_MINIMAL = "layout_minimal"
+    const val HANDLE_SIZE_COMPACT = "handle_size_compact"
+    const val HANDLE_SIZE_NORMAL = "handle_size_normal"
+    const val HANDLE_EDGE_LEFT = "handle_edge_left"
+    const val HANDLE_EDGE_RIGHT = "handle_edge_right"
 }

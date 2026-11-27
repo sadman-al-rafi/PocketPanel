@@ -113,6 +113,9 @@ class MainActivity : ComponentActivity() {
                     onVpnDisconnect = viewModel::disconnectVpn,
                     onVpnRemove = viewModel::removeVpnProfile,
                     onVpnDismissMessage = viewModel::dismissVpnMessage,
+                    onHandleSizeChange = viewModel::setHandleSize,
+                    onHandleEdgeChange = viewModel::setHandleEdge,
+                    onMainCardLayoutChange = viewModel::setMainCardLayout,
                 )
             }
         }

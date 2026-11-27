@@ -147,4 +147,26 @@
     <string name="thermal_emergency">Emergency</string>
     <string name="thermal_shutdown">Shutdown</string>
     <string name="thermal_unknown">Unknown</string>
+
+    <!-- M10 customization -->
+    <string name="settings_main_screen">Main screen</string>
+    <string name="layout_standard">Standard</string>
+    <string name="layout_standard_description">Show every card</string>
+    <string name="layout_focus">Focus</string>
+    <string name="layout_focus_description">Monitoring, VPN and hardware</string>
+    <string name="layout_minimal">Minimal</string>
+    <string name="layout_minimal_description">VPN and appearance only</string>
+    <string name="settings_handle">Floating handle</string>
+    <string name="handle_size_compact">Compact</string>
+    <string name="handle_size_compact_description">Smaller handle and panel</string>
+    <string name="handle_size_normal">Normal</string>
+    <string name="handle_size_normal_description">Default handle and panel size</string>
+    <string name="handle_edge_left">Left edge</string>
+    <string name="handle_edge_left_description">Rest against the left side</string>
+    <string name="handle_edge_right">Right edge</string>
+    <string name="handle_edge_right_description">Rest against the right side</string>
+    <string name="overlay_vpn_connect">Connect VPN</string>
+    <string name="overlay_vpn_disconnect">Disconnect VPN</string>
+    <string name="overlay_vpn_no_profile">Import a configuration in the app first.</string>
+    <string name="overlay_vpn_permission_needed">VPN permission is needed. Tap Connect and allow it.</string>
 </resources>
