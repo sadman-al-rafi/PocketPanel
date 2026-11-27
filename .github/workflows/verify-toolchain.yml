@@ -134,7 +134,7 @@ jobs:
           grep -E "kotlin|compose" \
             "$RUNNER_TEMP/logs/dependencies-debugCompileClasspath.log" \
             > ci-results/dependencies-filtered.log 2>/dev/null
-          tail -n 150 "$RUNNER_TEMP/logs/assembleDebug.log" \
+          tail -n 500 "$RUNNER_TEMP/logs/assembleDebug.log" \
             > ci-results/assemble-tail.log 2>/dev/null
           tail -n 150 "$RUNNER_TEMP/logs/lintDebug.log" \
             > ci-results/lint-tail.log 2>/dev/null

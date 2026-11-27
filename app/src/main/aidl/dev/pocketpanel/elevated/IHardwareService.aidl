@@ -8,7 +8,7 @@ interface IHardwareService {
     // Required by Shizuku to stop the user service.
     void destroy() = 16777114;
 
-    String readTextFile(String path);
+    String readTextFile(String path) = 1;
 
-    String[] listNames(String path);
+    String[] listNames(String path) = 2;
 }
