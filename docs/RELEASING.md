@@ -142,15 +142,24 @@ Required repository configuration:
 Manual inputs:
 
 - `tag`: must equal `v<versionName>` from `release/version.properties`.
-- `confirm`: must be typed as `PUBLISH`; any other value stops the job.
+- `dry_run`: when enabled, the job builds and verifies but does **not**
+  create a GitHub Release. Use this first to inspect the version and
+  signature manually.
+- `confirm`: must be typed as `PUBLISH` for a real publication. With
+  `dry_run=false` and any other value, the job is skipped entirely.
+- `notes`: release notes for the GitHub Release. If left empty, GitHub
+  generates notes from merged commits.
 
 Workflow actions: validate the tag and secrets, decode the keystore into a
 temporary runner file, build `:app:assembleRelease`, verify the APK with
 `apksigner`, compare the certificate fingerprint to `RELEASE_CERT_SHA256`,
-upload the signed APK as an artifact, create a source zip from the released
-commit with `git archive`, upload that as a second artifact, and create the
-GitHub Release with both the APK and the source zip plus generated notes.
-The temporary keystore is removed in an `always()` step.
+print a summary with the tag, `versionCode`, `versionName` and signed
+certificate digest, upload the signed APK as an artifact, create a source
+zip from the released commit with `git archive` and upload it as a second
+artifact. Only when `dry_run` is false and `confirm=PUBLISH` does it create
+the GitHub Release with both assets and the supplied notes (or generated
+notes if none were given). The temporary keystore is removed in an
+`always()` step.
 
 The source zip contains only tracked files at the released commit. It does
 not contain `.git`, build outputs, local configuration or any signing
@@ -167,9 +176,15 @@ git archive --format=zip --output=pocketpanel-source.zip HEAD
    is manual only).
 3. Request an authorized run of `verify-toolchain.yml` if a fresh build,
    lint and test report is needed.
-4. With explicit approval, dispatch `release.yml` with the correct tag and
-   `PUBLISH`.
-5. Approve the `release` environment review.
+4. With explicit approval, dispatch `release.yml` first with `dry_run`
+   enabled and the correct tag. Approve the `release` environment when
+   asked. Inspect the summary step for the tag, `versionCode`,
+   `versionName` and certificate digest, and download the APK/source zip
+   artifacts if you want to check them locally. No GitHub Release is
+   created in this mode.
+5. When satisfied, dispatch `release.yml` again with the same tag,
+   `dry_run` disabled, `confirm=PUBLISH`, and the release notes you want.
+   Approve the `release` environment review again.
 6. Confirm the run log shows a successful `apksigner` verification and a
    matching certificate fingerprint.
 7. Check the GitHub Release page: tag, notes, signed APK and source zip.

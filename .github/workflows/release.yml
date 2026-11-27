@@ -16,6 +16,15 @@ on:
         required: true
         type: string
         default: 'CANCEL'
+      dry_run:
+        description: 'Build and verify only; do not create a GitHub Release'
+        required: false
+        type: boolean
+        default: false
+      notes:
+        description: 'Release notes for the GitHub Release; empty uses generated notes'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -30,7 +39,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     environment: release
-    if: inputs.confirm == 'PUBLISH'
+    if: inputs.dry_run || inputs.confirm == 'PUBLISH'
     env:
       RELEASE_KEYSTORE: ${{ runner.temp }}/pocketpanel-release.jks
       SOURCE_ZIP: ${{ runner.temp }}/pocketpanel-source.zip
@@ -40,6 +49,8 @@ jobs:
       POCKETPANEL_RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
       EXPECTED_CERT_SHA256: ${{ secrets.RELEASE_CERT_SHA256 }}
       RELEASE_TAG: ${{ inputs.tag }}
+      RELEASE_NOTES: ${{ inputs.notes }}
+      DRY_RUN: ${{ inputs.dry_run }}
       GH_TOKEN: ${{ github.token }}
 
     steps:
@@ -104,6 +115,20 @@ jobs:
             echo "Certificate fingerprint does not match the expected release identity" >&2
             exit 1
           fi
+          echo "CERT_DIGEST=$ACTUAL" >> "$GITHUB_ENV"
+
+      - name: Print release verification summary
+        run: |
+          set -euo pipefail
+          echo "Release tag: $RELEASE_TAG"
+          echo "versionCode: $(grep -E '^versionCode=' release/version.properties | cut -d= -f2)"
+          echo "versionName: $(grep -E '^versionName=' release/version.properties | cut -d= -f2)"
+          echo "Signed certificate SHA-256: $CERT_DIGEST"
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "DRY RUN: no GitHub Release will be created."
+          else
+            echo "PUBLISH mode: GitHub Release will be created after approval."
+          fi
 
       - name: Create source archive from the released commit
         run: |
@@ -127,12 +152,20 @@ jobs:
           if-no-files-found: error
 
       - name: Create GitHub Release
+        if: inputs.confirm == 'PUBLISH'
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/release/app-release.apk
+          NOTES_FILE="$RUNNER_TEMP/pocketpanel-release-notes.md"
+          if [ -n "$RELEASE_NOTES" ]; then
+            printf '%s\n' "$RELEASE_NOTES" > "$NOTES_FILE"
+            NOTES_ARG="--notes-file=$NOTES_FILE"
+          else
+            NOTES_ARG="--generate-notes"
+          fi
           gh release create "$RELEASE_TAG" "$APK" "$SOURCE_ZIP" \
             --title "PocketPanel ${RELEASE_TAG#v}" \
-            --generate-notes \
+            "$NOTES_ARG" \
             --target "$GITHUB_SHA"
 
       - name: Remove temporary keystore

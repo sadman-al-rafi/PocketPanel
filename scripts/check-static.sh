@@ -629,6 +629,9 @@ fi
 
 if grep -q 'environment: release' "$release_workflow" \
     && grep -q "inputs.confirm == 'PUBLISH'" "$release_workflow" \
+    && grep -q 'inputs.dry_run' "$release_workflow" \
+    && grep -q 'RELEASE_NOTES' "$release_workflow" \
+    && grep -q -- '--notes-file' "$release_workflow" \
     && grep -q 'verify --print-certs' "$release_workflow" \
     && grep -q "tr -d ':'" "$release_workflow" \
     && grep -q 'git archive' "$release_workflow" \
