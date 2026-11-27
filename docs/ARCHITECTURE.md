@@ -261,8 +261,14 @@ approximately 2 s for CPU/RAM while the panel is open), runs sampling on
 | `MemoryProvider` | `ActivityManager.MemoryInfo` (`totalMem`, `availMem`, `lowMemory`, `threshold`) | Public API, available on all supported devices. |
 | `BatteryProvider` | Sticky `ACTION_BATTERY_CHANGED` plus `BatteryManager.getIntProperty` | Public API. Properties that return `Integer.MIN_VALUE` are reported as Unavailable individually. |
 | `ThermalProvider` | `PowerManager.getCurrentThermalStatus()` (API 29+), `getThermalHeadroom()` (API 30+), thresholds (API 35+), headroom listener (API 36+) | Available only when the running API level provides the call; below that the metric is NotSupported. Thermal status is a coarse enum, not a temperature. |
-| `NetworkProvider` | `TrafficStats` / `ConnectivityManager` | Throughput is device-wide; per-app attribution is not exposed by `TrafficStats`. Connection type is best-effort. |
+| `NetworkProvider` | `TrafficStats` / `ConnectivityManager` | Implemented in M5 as `NetworkMonitor`. Throughput is device-wide; per-app attribution is not exposed by `TrafficStats`. Connection type is best-effort. |
 | `GpuProvider` | None public. Optional vendor sysfs and EGL renderer string only | Always Unavailable for utilization. Renderer string may be shown as informational data, never as load. |
+
+M5 implements the network source as `NetworkMonitor`: the transport
+comes from `NetworkCapabilities`, and throughput is the delta between
+two `TrafficStats.getTotalRxBytes` / `getTotalTxBytes` samples. A null
+rate is shown as "Not available", and the UI states that rates are
+device-wide. `ACCESS_NETWORK_STATE` is the only additional permission.
 
 Explicit non-goals in monitoring: total CPU usage from `ActivityManager`,
 per-process CPU, GPU utilization, and any fabricated "FPS" reading.

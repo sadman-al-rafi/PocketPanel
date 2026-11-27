@@ -70,4 +70,18 @@
     <string name="monitoring_health_over_voltage">Over voltage</string>
     <string name="monitoring_health_failure">Failure</string>
     <string name="monitoring_health_cold">Cold</string>
+
+    <!-- M5 network monitoring -->
+    <string name="network">Network</string>
+    <string name="network_connection">Connection</string>
+    <string name="network_download">Download</string>
+    <string name="network_upload">Upload</string>
+    <string name="network_device_wide_note">Rates are device-wide.</string>
+    <string name="network_per_second">%1$s/s</string>
+    <string name="network_transport_wifi">Wi-Fi</string>
+    <string name="network_transport_cellular">Cellular</string>
+    <string name="network_transport_ethernet">Ethernet</string>
+    <string name="network_transport_vpn">VPN</string>
+    <string name="network_transport_other">Other</string>
+    <string name="network_transport_none">Not connected</string>
 </resources>

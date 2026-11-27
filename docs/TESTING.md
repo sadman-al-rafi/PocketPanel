@@ -164,6 +164,12 @@ Current status (2026-11-26):
     `1adee21605bdf0cb7707f89a6e3bb40fb6946303aaa8dde89654b243ea887802`.
   - Runtime monitoring behavior is not covered by CI and remains
     unverified (D016).
+- **M5 implementation (not yet CI-verified)**: network transport and
+  device-wide throughput are read with `ConnectivityManager` /
+  `NetworkCapabilities` and `TrafficStats`. `ACCESS_NETWORK_STATE` is
+  added to the manifest. `./scripts/check-static.sh` passes 75/75;
+  compilation, lint, unit tests and the APK require a new authorized
+  CI run.
 
 ## 4. Configuration Verification
 - `compileSdk 37.1` (API 37 with `minorApiLevel = 1`), `targetSdk 36`,
@@ -202,6 +208,8 @@ JVM unit tests (executed only in an authorized CI run):
 - `OverlayGeometryTest`: edge placement, vertical clamping, snap to
   nearest edge, fraction derivation and degenerate screen sizes.
 - `HandleEdgeTest`: storage mapping, fallback and default preferences.
+- `NetworkRateTest`: counter deltas, zero delta, unsupported counters,
+  backwards counters and non-positive elapsed time.
 
 Manual review checklist (no emulator; code and layout review):
 - Colors come from `MaterialTheme.colorScheme`; no literal colors

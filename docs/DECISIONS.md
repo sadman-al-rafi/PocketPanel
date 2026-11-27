@@ -848,3 +848,38 @@ Consequences:
 - Authorized run 45824780276 (run 20, commit `ca9ba8a`) verified the
   rewrite: build, lint (0 errors) and 15/15 JVM tests passed. Runtime
   behavior still needs device testing (D016).
+
+### D021 — M5 Network Monitoring Sources
+
+Status: Accepted.
+
+Context: M5 needs throughput and connection type without elevated
+access or additional runtime permissions.
+
+Decision:
+- Connection type: `ConnectivityManager.activeNetwork` plus
+  `getNetworkCapabilities`, mapped to Wi-Fi, cellular, Ethernet, VPN or
+  other. This requires the normal `ACCESS_NETWORK_STATE` permission.
+- Throughput: deltas of `TrafficStats.getTotalRxBytes()` and
+  `getTotalTxBytes()` over the monitoring interval. The values are
+  device-wide; per-app attribution is not available.
+- The first sample has no rate because a rate needs two counter
+  readings. Unsupported counters (negative values) or a negative delta
+  produce null, shown as "Not available".
+- Sampling is driven by the same `monitoringEnabled` and
+  `monitoringIntervalSeconds` preferences as the other metrics, so it
+  stops when monitoring stops.
+
+Alternatives considered:
+- `ConnectivityManager.registerNetworkCallback` for live changes:
+  rejected for M5; the monitoring interval already refreshes the
+  transport, and a callback adds lifecycle complexity without a
+  demonstrated need.
+- `NetworkStatsManager` for per-app usage: rejected; it requires the
+  `PACKAGE_USAGE_STATS` special access and is out of scope.
+- Showing raw byte counters: rejected; rates are the requested metric.
+
+Consequences:
+- One normal permission (`ACCESS_NETWORK_STATE`) with no prompt.
+- Throughput is device-wide, and the UI says so.
+- Network changes are reflected on the next sample.

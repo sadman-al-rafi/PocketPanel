@@ -9,6 +9,8 @@ import dev.pocketpanel.settings.SettingsRepository
 import dev.pocketpanel.settings.ThemeMode
 import dev.pocketpanel.settings.UserPreferences
 import dev.pocketpanel.system.DeviceInfo
+import dev.pocketpanel.system.NetworkInfo
+import dev.pocketpanel.system.NetworkMonitor
 import dev.pocketpanel.system.SystemInfoRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,12 +35,20 @@ data class PocketPanelUiState(
     val screen: AppScreen = AppScreen.Main,
     /** Latest monitoring sample, or null when monitoring is off or not ready. */
     val deviceInfo: DeviceInfo? = null,
+    /** Latest network sample, or null when monitoring is off or not ready. */
+    val networkInfo: NetworkInfo? = null,
+)
+
+private data class MonitoringSample(
+    val deviceInfo: DeviceInfo,
+    val networkInfo: NetworkInfo,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PocketPanelViewModel(
     private val settingsRepository: SettingsRepository,
     private val systemInfoRepository: SystemInfoRepository,
+    private val networkMonitor: NetworkMonitor,
 ) : ViewModel() {
 
     private val screen = MutableStateFlow<AppScreen>(AppScreen.Main)
@@ -47,16 +57,25 @@ class PocketPanelViewModel(
      * Polling only runs while the UI observes the state. Changing the
      * interval or stopping monitoring restarts the sampling flow.
      */
-    private val deviceInfo: StateFlow<DeviceInfo?> = settingsRepository.preferences
+    private val monitoring: StateFlow<MonitoringSample?> = settingsRepository.preferences
         .map { preferences ->
             preferences.monitoringEnabled to preferences.monitoringIntervalSeconds
         }
         .distinctUntilChanged()
         .flatMapLatest { (enabled, intervalSeconds) ->
-            if (enabled) {
-                systemInfoRepository.deviceInfoFlow(intervalSeconds * 1_000L)
-            } else {
+            if (!enabled) {
                 flowOf(null)
+            } else {
+                val intervalMillis = intervalSeconds * 1_000L
+                combine(
+                    systemInfoRepository.deviceInfoFlow(intervalMillis),
+                    networkMonitor.networkInfoFlow(intervalMillis),
+                ) { deviceInfo, networkInfo ->
+                    MonitoringSample(
+                        deviceInfo = deviceInfo,
+                        networkInfo = networkInfo,
+                    )
+                }
             }
         }
         .stateIn(
@@ -68,12 +87,13 @@ class PocketPanelViewModel(
     val uiState: StateFlow<PocketPanelUiState> = combine(
         settingsRepository.preferences,
         screen,
-        deviceInfo,
-    ) { preferences, currentScreen, info ->
+        monitoring,
+    ) { preferences, currentScreen, sample ->
         PocketPanelUiState(
             preferences = preferences,
             screen = currentScreen,
-            deviceInfo = info,
+            deviceInfo = sample?.deviceInfo,
+            networkInfo = sample?.networkInfo,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -111,9 +131,14 @@ class PocketPanelViewModel(
         fun factory(
             settingsRepository: SettingsRepository,
             systemInfoRepository: SystemInfoRepository,
+            networkMonitor: NetworkMonitor,
         ): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                PocketPanelViewModel(settingsRepository, systemInfoRepository)
+                PocketPanelViewModel(
+                    settingsRepository = settingsRepository,
+                    systemInfoRepository = systemInfoRepository,
+                    networkMonitor = networkMonitor,
+                )
             }
         }
     }

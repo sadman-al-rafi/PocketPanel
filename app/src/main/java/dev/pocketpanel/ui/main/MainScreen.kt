@@ -1,6 +1,7 @@
 package dev.pocketpanel.ui.main
 
 import android.os.BatteryManager
+import android.text.format.Formatter
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -34,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import dev.pocketpanel.R
 import dev.pocketpanel.settings.UserPreferences
 import dev.pocketpanel.system.DeviceInfo
+import dev.pocketpanel.system.NetworkInfo
+import dev.pocketpanel.system.NetworkTransport
 import dev.pocketpanel.ui.TestTags
 import dev.pocketpanel.ui.labelRes
 import dev.pocketpanel.ui.theme.isDynamicColorAvailable
@@ -48,6 +52,7 @@ fun MainScreen(
     onRequestOverlayPermission: () -> Unit,
     onOpenSettings: () -> Unit,
     deviceInfo: DeviceInfo? = null,
+    networkInfo: NetworkInfo? = null,
     onMonitoringEnabledChange: (Boolean) -> Unit = {},
     onMonitoringIntervalChange: (Int) -> Unit = {},
 ) {
@@ -99,6 +104,7 @@ fun MainScreen(
                     MonitoringCard(
                         preferences = preferences,
                         deviceInfo = deviceInfo,
+                        networkInfo = networkInfo,
                         onMonitoringEnabledChange = onMonitoringEnabledChange,
                         onMonitoringIntervalChange = onMonitoringIntervalChange,
                     )
@@ -250,6 +256,7 @@ private fun AppearanceRow(label: String, value: String) {
 private fun MonitoringCard(
     preferences: UserPreferences,
     deviceInfo: DeviceInfo?,
+    networkInfo: NetworkInfo?,
     onMonitoringEnabledChange: (Boolean) -> Unit,
     onMonitoringIntervalChange: (Int) -> Unit,
 ) {
@@ -298,6 +305,21 @@ private fun MonitoringCard(
                     )
                 } else {
                     MonitoringReadings(deviceInfo)
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                Text(
+                    text = stringResource(R.string.network),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                if (networkInfo == null) {
+                    Text(
+                        text = stringResource(R.string.monitoring_waiting),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    NetworkReadings(networkInfo)
                 }
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
@@ -393,6 +415,49 @@ private fun MonitoringReading(label: String, value: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+@Composable
+private fun NetworkReadings(networkInfo: NetworkInfo) {
+    MonitoringReading(
+        label = stringResource(R.string.network_connection),
+        value = networkInfo.transport?.let { transportLabel(it) }
+            ?: stringResource(R.string.not_available),
+    )
+    MonitoringReading(
+        label = stringResource(R.string.network_download),
+        value = networkInfo.receiveBytesPerSecond?.let { formatRate(it) }
+            ?: stringResource(R.string.not_available),
+    )
+    MonitoringReading(
+        label = stringResource(R.string.network_upload),
+        value = networkInfo.transmitBytesPerSecond?.let { formatRate(it) }
+            ?: stringResource(R.string.not_available),
+    )
+    Text(
+        text = stringResource(R.string.network_device_wide_note),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun transportLabel(transport: NetworkTransport): String = when (transport) {
+    NetworkTransport.WIFI -> stringResource(R.string.network_transport_wifi)
+    NetworkTransport.CELLULAR -> stringResource(R.string.network_transport_cellular)
+    NetworkTransport.ETHERNET -> stringResource(R.string.network_transport_ethernet)
+    NetworkTransport.VPN -> stringResource(R.string.network_transport_vpn)
+    NetworkTransport.OTHER -> stringResource(R.string.network_transport_other)
+    NetworkTransport.NONE -> stringResource(R.string.network_transport_none)
+}
+
+@Composable
+private fun formatRate(bytesPerSecond: Long): String {
+    val context = LocalContext.current
+    return stringResource(
+        R.string.network_per_second,
+        Formatter.formatFileSize(context, bytesPerSecond),
+    )
 }
 
 @Composable

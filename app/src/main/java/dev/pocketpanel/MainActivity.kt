@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.pocketpanel.overlay.OverlayPermission
 import dev.pocketpanel.overlay.OverlayService
 import dev.pocketpanel.settings.SettingsRepository
+import dev.pocketpanel.system.NetworkMonitor
 import dev.pocketpanel.system.SystemInfoRepository
 import dev.pocketpanel.ui.PocketPanelApp
 import dev.pocketpanel.ui.PocketPanelViewModel
@@ -37,6 +38,7 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var systemInfoRepository: SystemInfoRepository
+    private lateinit var networkMonitor: NetworkMonitor
 
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -58,6 +60,7 @@ class MainActivity : ComponentActivity() {
 
         settingsRepository = (application as PocketPanelApplication).settingsRepository
         systemInfoRepository = SystemInfoRepository(applicationContext)
+        networkMonitor = NetworkMonitor(applicationContext)
         overlayPermissionGranted = OverlayPermission.isGranted(this)
         notificationPermissionGranted = areNotificationsGranted()
 
@@ -66,6 +69,7 @@ class MainActivity : ComponentActivity() {
                 factory = PocketPanelViewModel.factory(
                     settingsRepository = settingsRepository,
                     systemInfoRepository = systemInfoRepository,
+                    networkMonitor = networkMonitor,
                 ),
             )
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()

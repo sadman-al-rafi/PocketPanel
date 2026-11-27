@@ -359,7 +359,9 @@ remains unverified because no device test is authorized (D016).
 ---
 
 ## M5 — Network Monitor
-Status: [ ] Not started
+Status: [~] In Progress 2026-11-27 (started after run 20). A new
+authorized CI run is required before this milestone can be marked
+implemented.
 
 ### Objectives
 - Network throughput monitoring.
@@ -371,6 +373,17 @@ Status: [ ] Not started
 - [ ] Interface handles network changes.
 - [ ] Monitoring lifecycle is respected.
 - [ ] Build and tests pass.
+
+### Implementation Notes
+- `NetworkMonitor` reads the active transport from `ConnectivityManager`
+  and `NetworkCapabilities`, and derives device-wide download/upload
+  rates from successive `TrafficStats` total counters.
+- The first sample carries the transport only; a rate needs two samples.
+  Unsupported counters or a negative delta yield null ("Not available").
+- Sampling shares the monitoring interval and stops with monitoring.
+- The network section is part of the monitoring card and is labelled as
+  device-wide, because `TrafficStats` exposes no per-app attribution.
+- `ACCESS_NETWORK_STATE` is declared (normal permission, no prompt).
 
 ---
 

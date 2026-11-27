@@ -37,6 +37,7 @@ fun PocketPanelApp(
                 onRequestOverlayPermission = onRequestOverlayPermission,
                 onOpenSettings = onOpenSettings,
                 deviceInfo = uiState.deviceInfo,
+                networkInfo = uiState.networkInfo,
                 onMonitoringEnabledChange = onMonitoringEnabledChange,
                 onMonitoringIntervalChange = onMonitoringIntervalChange,
             )
