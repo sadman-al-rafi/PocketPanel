@@ -19,7 +19,7 @@
     <string name="dynamic_color_unavailable">Requires Android 12 or later</string>
 
     <string name="main_welcome_title">Welcome to PocketPanel</string>
-    <string name="main_welcome_body">System monitoring and quick tools, one gesture away.</string>
+    <string name="main_welcome_body">System monitoring and network controls, one gesture away.</string>
     <string name="main_foundation_note">This build includes the floating handle and basic system monitoring.</string>
     <string name="current_appearance">Current appearance</string>
     <string name="change_in_settings">Change in settings</string>

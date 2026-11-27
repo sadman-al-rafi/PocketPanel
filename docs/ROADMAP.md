@@ -411,7 +411,8 @@ confirmed that network data and the ping row work on a test device.
 ---
 
 ## M6 — WireGuard VPN Client
-Status: [ ] Not started
+Status: [~] Implemented in commits `3edf714` and `b972f56`; build, lint
+and tests pending CI verification (D024). Device verification not run.
 
 ### Objectives
 - Add an embedded WireGuard client using the official

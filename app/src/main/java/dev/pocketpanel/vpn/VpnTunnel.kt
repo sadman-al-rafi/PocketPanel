@@ -9,7 +9,7 @@ import com.wireguard.android.backend.Tunnel
  * instance and reuses it for every connect and disconnect.
  */
 class VpnTunnel(
-    override val name: String,
+    private val name: String,
     private val onState: (Tunnel.State) -> Unit,
 ) : Tunnel {
 
