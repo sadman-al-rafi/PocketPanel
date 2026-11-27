@@ -1218,10 +1218,9 @@ because the overlay adds no polling loop.
 
 Verification: CI run `46008800467` (run 37, commit `dd9ba0e`) passed build,
 lint (0 errors, 5 pre-existing warnings) and 50/50 JVM tests. The debug
-APK is 28,038,751 bytes (sha256
+APK was 28,038,751 bytes (sha256
 `f85b0c6973663fcad9022ebdf34e971460f66af3803d074261c02eaab5adc08a`).
-`scripts/check-static.sh` passes 109/109 checks. The overlay consent flow
-still needs device verification.
+`scripts/check-static.sh` passed 109/109 checks.
 
 ### D030 — Home Screen and Overlay Panel Follow-up
 
@@ -1261,5 +1260,11 @@ Alternatives considered:
 
 Consequences: the expanded overlay is taller to fit the grid. The panel
 runs two monitoring flows only while the user has monitoring enabled and
-the overlay is attached; all sampling stops with the service. Device
-verification is still required.
+the overlay is attached; all sampling stops with the service.
+
+Verification: CI run `46016088373` (run 40, commit `c9c52b5`) passed build,
+lint (0 errors, 5 pre-existing warnings) and 49/49 JVM tests, including 2
+new `MemoryUsageTest` cases. The debug APK is 28,031,631 bytes (sha256
+`f34962f3bdf5a259a509bae4200dcdf9c6cc3318a9783d7bad4c1fab4b3559bd`).
+`scripts/check-static.sh` passes 111/111. Device verification is still
+required.

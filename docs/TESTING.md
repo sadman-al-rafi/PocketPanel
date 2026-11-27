@@ -410,10 +410,11 @@ Automated (executed for the earlier M10 state):
   50/50 JVM tests, including 2 new preference-enum cases.
 - `scripts/check-static.sh`: 109/109 checks at that point.
 
-Automated (pending for the current follow-up):
-- Build, lint and JVM tests after the home-screen and overlay-monitoring
-  changes, including 2 new `MemoryUsageTest` cases.
-- Static checks cover the 2x2 grid, monitoring gating and thermal removal.
+Automated (executed for the follow-up):
+- CI run `46016088373` (run 40, commit `c9c52b5`) passed build, lint and
+  49/49 JVM tests, including 2 new `MemoryUsageTest` cases.
+- `scripts/check-static.sh`: 111/111 checks, covering the 2x2 grid,
+  monitoring gating and thermal removal.
 
 Manual device verification (user-reported, pending):
 - The home screen starts with the always-visible floating-panel switch;

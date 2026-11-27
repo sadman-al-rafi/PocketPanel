@@ -588,9 +588,8 @@ commit `773e6b3`). Device verification of the hardware card pending.
 ---
 
 ## M10 — Customization and Polish
-Status: [~] Follow-up changes in progress 2026-11-27. CI run 37 verified
-the earlier M10 state; the home-screen, overlay-monitoring and thermal
-removal changes below still need verification.
+Status: [✓] Implemented and build verified 2026-11-27 (CI run 40,
+commit `c9c52b5`). Device verification pending.
 
 ### Objectives
 - Panel customization.
@@ -656,8 +655,14 @@ monitoring follow-up; the current tree still needs its own CI run.
 - Debug APK: 28,038,751 bytes; sha256
   `f85b0c6973663fcad9022ebdf34e971460f66af3803d074261c02eaab5adc08a`.
 - `scripts/check-static.sh`: 109/109 checks.
-- Not verified: settings persistence on a device, overlay consent flow
-  and resizing behaviour.
+- The follow-up changes were verified by CI run `46016088373` (run 40,
+  commit `c9c52b5`): build, lint and 49/49 JVM tests passed, with 2 new
+  `MemoryUsageTest` cases and 3 thermal cases removed. Lint had 0 errors
+  and 5 pre-existing warnings. The debug APK is 28,031,631 bytes (sha256
+  `f34962f3bdf5a259a509bae4200dcdf9c6cc3318a9783d7bad4c1fab4b3559bd`).
+  `scripts/check-static.sh` passes 111/111.
+- Not verified: settings persistence on a device, overlay consent flow,
+  the 2x2 grid and drag smoothness.
 
 ---
 
