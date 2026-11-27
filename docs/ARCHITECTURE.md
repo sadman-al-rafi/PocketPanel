@@ -268,7 +268,15 @@ M5 implements the network source as `NetworkMonitor`: the transport
 comes from `NetworkCapabilities`, and throughput is the delta between
 two `TrafficStats.getTotalRxBytes` / `getTotalTxBytes` samples. A null
 rate is shown as "Not available", and the UI states that rates are
-device-wide. `ACCESS_NETWORK_STATE` is the only additional permission.
+device-wide.
+
+Ping latency is measured by `PingProbe` with the platform `ping`
+command (`/system/bin/ping`, falling back to `ping` on `PATH`) against
+8.8.8.8. The result is cached for five seconds and exposed as
+`NetworkInfo.pingMillis` so the overlay side panel can reuse it later.
+The command is not an SDK contract: a missing binary, a blocked
+executable, a timeout or unparseable output yields null, shown as
+"Not available". No latency is estimated.
 
 Explicit non-goals in monitoring: total CPU usage from `ActivityManager`,
 per-process CPU, GPU utilization, and any fabricated "FPS" reading.
@@ -282,6 +290,7 @@ per-process CPU, GPU utilization, and any fabricated "FPS" reading.
 | `FOREGROUND_SERVICE_SPECIAL_USE` | Manifest | Required from API 34 with the declared service type. |
 | `POST_NOTIFICATIONS` | API 33+, before starting the service | Runtime request; denial does not block the feature, but is shown in settings as a caveat. |
 | `ACCESS_NETWORK_STATE` | Manifest, network provider | Normal permission, no prompt. |
+| `INTERNET` | Manifest, ping probe | Normal permission, no prompt. Required for the platform `ping` process. |
 
 No location, storage, contacts, phone state or accessibility permissions
 are used. No `QUERY_ALL_PACKAGES`.

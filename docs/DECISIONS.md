@@ -883,3 +883,39 @@ Consequences:
 - One normal permission (`ACCESS_NETWORK_STATE`) with no prompt.
 - Throughput is device-wide, and the UI says so.
 - Network changes are reflected on the next sample.
+
+### D022 — Ping Latency via the Platform Command
+
+Status: Accepted.
+
+Context: M5 needs a ping reading to 8.8.8.8, and the value will later
+appear in the overlay side panel. Android has no public ICMP API for
+unprivileged apps.
+
+Decision:
+- Measure latency with the platform `ping` command, first
+  `/system/bin/ping` and then `ping` from `PATH`, one echo request with
+  a bounded timeout (`-c 1 -W <seconds>`).
+- Parse the `time=... ms` field, accepting both `time=23.4 ms` and
+  `time<1 ms`.
+- Cache a result for five seconds so a slow or blocked probe does not
+  run on every monitoring tick.
+- Any failure (missing binary, `EACCES`, timeout, non-zero exit,
+  unparseable output) returns null, shown as "Not available". No
+  latency is estimated or synthesized.
+- Expose the value as `NetworkInfo.pingMillis` so the overlay side
+  panel can reuse the same source.
+
+Alternatives considered:
+- Raw ICMP sockets: rejected; `SOCK_RAW` requires root on Android.
+- `InetAddress.isReachable`: rejected; it silently falls back to TCP
+  echo port 7, which most networks block, and does not report a
+  millisecond value.
+- A third-party ping library: rejected; it would add a dependency for
+  behavior the platform binary already provides.
+
+Consequences:
+- `INTERNET` is declared (normal permission, no prompt).
+- Ping availability varies by OEM/ROM; unsupported devices show
+  "Not available" rather than a fabricated number.
+- The reading refreshes at most every five seconds.

@@ -4,15 +4,16 @@
     <!--
         M2 uses the overlay window, a special-use foreground service and a
         user-visible service notification. M5 reads the active network
-        transport and device-wide traffic counters. ACCESS_NETWORK_STATE is
-        a normal permission and shows no prompt. No other permissions are
-        needed.
+        transport and device-wide traffic counters, and runs the platform
+        `ping` command. ACCESS_NETWORK_STATE and INTERNET are normal
+        permissions and show no prompt. No other permissions are needed.
     -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".PocketPanelApplication"

@@ -218,6 +218,7 @@ android.permission.FOREGROUND_SERVICE
 android.permission.FOREGROUND_SERVICE_SPECIAL_USE
 android.permission.POST_NOTIFICATIONS
 android.permission.ACCESS_NETWORK_STATE
+android.permission.INTERNET
 "
 declared_permissions=$(grep -oE 'android\.permission\.[A-Z_]+' "$manifest" | sort -u)
 for permission in $declared_permissions; do

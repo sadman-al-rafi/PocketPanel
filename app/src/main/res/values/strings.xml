@@ -84,4 +84,6 @@
     <string name="network_transport_vpn">VPN</string>
     <string name="network_transport_other">Other</string>
     <string name="network_transport_none">Not connected</string>
+    <string name="network_ping">Ping (%1$s)</string>
+    <string name="network_ping_value">%1$d ms</string>
 </resources>

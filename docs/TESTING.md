@@ -164,12 +164,26 @@ Current status (2026-11-26):
     `1adee21605bdf0cb7707f89a6e3bb40fb6946303aaa8dde89654b243ea887802`.
   - Runtime monitoring behavior is not covered by CI and remains
     unverified (D016).
-- **M5 implementation (not yet CI-verified)**: network transport and
-  device-wide throughput are read with `ConnectivityManager` /
-  `NetworkCapabilities` and `TrafficStats`. `ACCESS_NETWORK_STATE` is
-  added to the manifest. `./scripts/check-static.sh` passes 75/75;
-  compilation, lint, unit tests and the APK require a new authorized
-  CI run.
+- **M5 implementation**: network transport and device-wide throughput
+  are read with `ConnectivityManager` / `NetworkCapabilities` and
+  `TrafficStats`. `ACCESS_NETWORK_STATE` is added to the manifest.
+- **Run 45936405957 (run 21, commit `50735e4`) succeeded**:
+  - `assembleDebug`: success.
+  - `lintDebug`: 0 errors, 5 warnings (the same pre-existing set).
+  - `testDebugUnitTest`: 20 tests, 0 failures, 0 ignored
+    (`OverlayGeometryTest` 7, `ThemeModeTest` 5, `HandleEdgeTest` 3,
+    `NetworkRateTest` 5), all at 100%.
+  - Debug APK: 14,008,773 bytes, sha256
+    `8caf28d98ba801bbf68dcb9f967a35f32c1002fff9dbbc83280e5f2024a74580`.
+  - The user confirmed that the app shows the network data on a local
+    device test.
+- **Ping section (not yet CI-verified)**: latency to 8.8.8.8 is measured
+  with the platform `ping` command, parsed for the `time=... ms` value,
+  and cached between samples. `INTERNET` is declared for the ping
+  process. A missing or blocked `ping` binary yields "Not available".
+  `./scripts/check-static.sh` passes (77 checks); compilation, lint,
+  unit tests (25 expected: 20 existing + 5 `PingLatencyTest`) and the
+  APK require a new authorized CI run.
 
 ## 4. Configuration Verification
 - `compileSdk 37.1` (API 37 with `minorApiLevel = 1`), `targetSdk 36`,
@@ -210,6 +224,8 @@ JVM unit tests (executed only in an authorized CI run):
 - `HandleEdgeTest`: storage mapping, fallback and default preferences.
 - `NetworkRateTest`: counter deltas, zero delta, unsupported counters,
   backwards counters and non-positive elapsed time.
+- `PingLatencyTest`: decimal, whole-number and sub-millisecond latency
+  parsing, plus timeout and empty output returning null.
 
 Manual review checklist (no emulator; code and layout review):
 - Colors come from `MaterialTheme.colorScheme`; no literal colors

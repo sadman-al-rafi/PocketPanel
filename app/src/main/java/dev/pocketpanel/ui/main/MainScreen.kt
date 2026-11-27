@@ -38,6 +38,7 @@ import dev.pocketpanel.settings.UserPreferences
 import dev.pocketpanel.system.DeviceInfo
 import dev.pocketpanel.system.NetworkInfo
 import dev.pocketpanel.system.NetworkTransport
+import dev.pocketpanel.system.PING_HOST
 import dev.pocketpanel.ui.TestTags
 import dev.pocketpanel.ui.labelRes
 import dev.pocketpanel.ui.theme.isDynamicColorAvailable
@@ -433,6 +434,12 @@ private fun NetworkReadings(networkInfo: NetworkInfo) {
         label = stringResource(R.string.network_upload),
         value = networkInfo.transmitBytesPerSecond?.let { formatRate(it) }
             ?: stringResource(R.string.not_available),
+    )
+    MonitoringReading(
+        label = stringResource(R.string.network_ping, PING_HOST),
+        value = networkInfo.pingMillis?.let {
+            stringResource(R.string.network_ping_value, it)
+        } ?: stringResource(R.string.not_available),
     )
     Text(
         text = stringResource(R.string.network_device_wide_note),

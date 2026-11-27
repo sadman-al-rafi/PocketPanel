@@ -359,20 +359,28 @@ remains unverified because no device test is authorized (D016).
 ---
 
 ## M5 — Network Monitor
-Status: [~] In Progress 2026-11-27 (started after run 20). A new
-authorized CI run is required before this milestone can be marked
-implemented.
+Status: [~] In Progress 2026-11-27 (commit `50735e4`). The base network
+monitor is implemented and verified by run 45936405957 (run 21) and by
+the user's local device test. The requested ping section is implemented
+on top of it and awaits CI verification.
 
 ### Objectives
 - Network throughput monitoring.
 - Basic connection information.
 - Network monitoring UI.
+- Ping latency to 8.8.8.8 (added on request).
 
 ### Acceptance Criteria
-- [ ] Readings are accurate to the supported source.
-- [ ] Interface handles network changes.
-- [ ] Monitoring lifecycle is respected.
-- [ ] Build and tests pass.
+- [✓] Readings are accurate to the supported source. Throughput is
+      device-wide from `TrafficStats`; the user confirmed the values
+      display on a local device.
+- [~] Interface handles network changes. The transport is re-read on
+      every sample; a network-switch scenario has not been tested
+      separately.
+- [~] Monitoring lifecycle is respected. Sampling is tied to the
+      monitoring switch and interval; stop/start has not been tested
+      separately on a device.
+- [✓] Build and tests pass (run 21).
 
 ### Implementation Notes
 - `NetworkMonitor` reads the active transport from `ConnectivityManager`
@@ -384,6 +392,17 @@ implemented.
 - The network section is part of the monitoring card and is labelled as
   device-wide, because `TrafficStats` exposes no per-app attribution.
 - `ACCESS_NETWORK_STATE` is declared (normal permission, no prompt).
+- Ping is measured with the platform `ping` command against 8.8.8.8,
+  cached for a few seconds and exposed in `NetworkInfo` so the overlay
+  side panel can reuse it later. `INTERNET` is declared for the ping
+  process. A blocked or missing `ping` binary yields "Not available".
+
+### Verification Performed
+- Authorized manual run 45936405957 (run 21, commit `50735e4`)
+  succeeded: build, lint 0 errors / 5 pre-existing warnings, 20/20 JVM
+  tests and a 14,008,773-byte debug APK.
+- The user reported that the app shows the network data on a local
+  device test.
 
 ---
 
