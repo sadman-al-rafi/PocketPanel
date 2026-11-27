@@ -177,13 +177,19 @@ Current status (2026-11-26):
     `8caf28d98ba801bbf68dcb9f967a35f32c1002fff9dbbc83280e5f2024a74580`.
   - The user confirmed that the app shows the network data on a local
     device test.
-- **Ping section (not yet CI-verified)**: latency to 8.8.8.8 is measured
-  with the platform `ping` command, parsed for the `time=... ms` value,
-  and cached between samples. `INTERNET` is declared for the ping
-  process. A missing or blocked `ping` binary yields "Not available".
-  `./scripts/check-static.sh` passes (77 checks); compilation, lint,
-  unit tests (25 expected: 20 existing + 5 `PingLatencyTest`) and the
-  APK require a new authorized CI run.
+- **Ping section**: latency to 8.8.8.8 is measured with the platform
+  `ping` command, parsed for the `time=... ms` value, and cached for
+  five seconds. `INTERNET` is declared for the ping process. A missing
+  or blocked `ping` binary yields "Not available".
+- **Run 45939285640 (run 22, commit `37fab11`) succeeded**:
+  - `assembleDebug`: success.
+  - `lintDebug`: 0 errors, 5 warnings (the same pre-existing set).
+  - `testDebugUnitTest`: 25 tests, 0 failures, 0 ignored
+    (`OverlayGeometryTest` 7, `ThemeModeTest` 5, `HandleEdgeTest` 3,
+    `NetworkRateTest` 5, `PingLatencyTest` 5), all at 100%.
+  - Debug APK: 14,025,981 bytes, sha256
+    `ad377fe0230cc8878fa928c02c76e0cde61cc4c2630459f6660951afbe3f5053`.
+  - The user confirmed that the ping row works on a test device.
 
 ## 4. Configuration Verification
 - `compileSdk 37.1` (API 37 with `minorApiLevel = 1`), `targetSdk 36`,

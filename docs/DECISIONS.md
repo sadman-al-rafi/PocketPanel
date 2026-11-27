@@ -919,3 +919,8 @@ Consequences:
 - Ping availability varies by OEM/ROM; unsupported devices show
   "Not available" rather than a fabricated number.
 - The reading refreshes at most every five seconds.
+
+Verification: authorized run 45939285640 (run 22, commit `37fab11`)
+passed build, lint and 25/25 JVM tests, including five
+`PingLatencyTest` parser cases. The user confirmed the ping row works
+on a test device.

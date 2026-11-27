@@ -359,10 +359,10 @@ remains unverified because no device test is authorized (D016).
 ---
 
 ## M5 — Network Monitor
-Status: [~] In Progress 2026-11-27 (commit `50735e4`). The base network
-monitor is implemented and verified by run 45936405957 (run 21) and by
-the user's local device test. The requested ping section is implemented
-on top of it and awaits CI verification.
+Status: [✓] Implemented 2026-11-27 (commit `37fab11`). Authorized manual
+run 45939285640 (run 22) succeeded: build, lint 0 errors / 5
+pre-existing warnings, 25/25 JVM tests and the debug APK. The user
+confirmed that network data and the ping row work on a test device.
 
 ### Objectives
 - Network throughput monitoring.
@@ -373,14 +373,14 @@ on top of it and awaits CI verification.
 ### Acceptance Criteria
 - [✓] Readings are accurate to the supported source. Throughput is
       device-wide from `TrafficStats`; the user confirmed the values
-      display on a local device.
+      and the ping reading display on a test device.
 - [~] Interface handles network changes. The transport is re-read on
       every sample; a network-switch scenario has not been tested
       separately.
 - [~] Monitoring lifecycle is respected. Sampling is tied to the
       monitoring switch and interval; stop/start has not been tested
       separately on a device.
-- [✓] Build and tests pass (run 21).
+- [✓] Build and tests pass (run 22).
 
 ### Implementation Notes
 - `NetworkMonitor` reads the active transport from `ConnectivityManager`
@@ -393,7 +393,7 @@ on top of it and awaits CI verification.
   device-wide, because `TrafficStats` exposes no per-app attribution.
 - `ACCESS_NETWORK_STATE` is declared (normal permission, no prompt).
 - Ping is measured with the platform `ping` command against 8.8.8.8,
-  cached for a few seconds and exposed in `NetworkInfo` so the overlay
+  cached for five seconds and exposed in `NetworkInfo` so the overlay
   side panel can reuse it later. `INTERNET` is declared for the ping
   process. A blocked or missing `ping` binary yields "Not available".
 
@@ -403,6 +403,10 @@ on top of it and awaits CI verification.
   tests and a 14,008,773-byte debug APK.
 - The user reported that the app shows the network data on a local
   device test.
+- Authorized manual run 45939285640 (run 22, commit `37fab11`)
+  succeeded: build, lint 0 errors / 5 pre-existing warnings, 25/25 JVM
+  tests and a 14,025,981-byte debug APK.
+- The user reported that the ping row works on a test device.
 
 ---
 
