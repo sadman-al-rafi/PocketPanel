@@ -742,26 +742,13 @@ Kotlin 2.4.21, compileSdk 37.1, minSdk 26, targetSdk 36.
 ---
 
 ## Current Milestone
-M2 — Floating Overlay Foundation
+None. M11 (Final Verification) is complete.
 
-Status: implemented 2026-11-26; build and device verification pending.
-`scripts/check-static.sh` passes 75 checks. No M2 build, lint, unit-test
-or device result exists yet.
+All roadmap milestones are complete: M0a, M0b, M1-M7, M10 and M11. M8
+(Shizuku) and M9 (root) were removed from the roadmap by the project
+owner and were never implemented.
 
-M1 — Application Foundation and Material You
-
-Status: implementation and build verified by authorized run 45669463189
-(commit `ba95fb4`): build, lint (0 errors) and 5/5 JVM tests pass, APK
-produced. M1 stays `[~]` because runtime behavior (launch, theme switch,
-persistence, dynamic color) has not been observed on a device, and
-device testing is suspended (D016). Two post-run lint fixes were applied
-in commit `53dd8d3` and are awaiting the next authorized run.
-
-M0a (research and documentation) is complete. M0b build verification is
-complete on the GitHub Actions x86_64 runner; its launch smoke test is
-deferred and remains unsatisfied because emulator testing is suspended
-(D016).
-
-Do not start M3 or later without explicit authorization, and do not run
-CI without explicit authorization for that run. Pushing commits does
-not require permission because the workflow is manual-only.
+The final CI result, APK details, device verification and known
+limitations are recorded in the M11 Final Verification Report above. CI
+runs on every push to `main` (D024); a run is reported only after it
+completes.
