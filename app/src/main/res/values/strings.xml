@@ -38,7 +38,6 @@
     <string name="overlay_notification_denied">Notifications are off, so the service notification is hidden. The floating handle still works.</string>
     <string name="overlay_handle_description">Floating panel handle. Tap to open, drag to move.</string>
     <string name="overlay_panel_title">PocketPanel</string>
-    <string name="overlay_panel_body">Drag the handle to move it.</string>
     <string name="overlay_panel_hide">Hide</string>
     <string name="overlay_notification_channel">Floating panel</string>
     <string name="overlay_notification_channel_description">Keeps the floating handle running.</string>
