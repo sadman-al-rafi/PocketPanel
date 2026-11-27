@@ -1145,6 +1145,13 @@ Verified sources (checked 2026-11-27):
 - https://developer.android.com/reference/android/opengl/EGL14
 - https://developer.android.com/reference/android/os/PowerManager
 
+Verification: CI run `45966560679` (run 28, commit `773e6b3`) passed
+build, lint (0 errors, 5 pre-existing warnings) and 48/48 JVM tests,
+including 3 new `ThermalInfoTest` cases. The debug APK is 28,014,367
+bytes (sha256 `0eee340d44ca4a33f2c61644c7bccc80658b41a06252d2c3f55a640c7cf6552f`).
+`scripts/check-static.sh` passes 101/101 checks. Device behavior is
+still unverified.
+
 ### D027 — Shizuku Evaluation
 
 Date: 2026-11-27

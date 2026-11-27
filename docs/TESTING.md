@@ -387,7 +387,24 @@ Manual device verification (user-reported):
   output.
 - With the VPN off, monitoring and the overlay still work.
 
-## 13. Reporting
+## 13. Hardware Verification (M7)
+
+Automated (executed):
+- CI run `45966560679` (run 28, commit `773e6b3`) passed build, lint and
+  48/48 JVM tests, including 3 `ThermalInfoTest` mapping cases.
+- `scripts/check-static.sh`: 101/101 checks.
+
+Manual device verification (user-reported, pending):
+- The advanced hardware card shows a GPU renderer, vendor and OpenGL ES
+  version where an EGL context can be created.
+- No GPU utilization percentage or FPS value is shown anywhere.
+- On API 26-28 the thermal status row says "Not supported on this
+  Android version"; on API 29+ it shows a coarse status label; on API
+  30+ it also shows a headroom fraction.
+- With monitoring off, the card states that monitoring must be enabled.
+- Standard mode still works with no Shizuku or root setup.
+
+## 14. Reporting
 
 Every test report must state:
 - What was executed, with the command or manual steps.

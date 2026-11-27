@@ -526,8 +526,8 @@ works normally on a test device.
 ---
 
 ## M7 — GPU and Advanced Metrics
-Status: [~] Started 2026-11-27. Technology validation recorded in
-D026/D027; implementation pending build and device verification.
+Status: [✓] Implemented and build verified 2026-11-27 (CI run 28,
+commit `773e6b3`). Device verification of the hardware card pending.
 
 ### Objectives
 - Investigate GPU monitoring sources.
@@ -559,8 +559,20 @@ D026/D027; implementation pending build and device verification.
 - [ ] Optional elevated access is isolated: M7 adds no Shizuku or root
       path. The boundary for M8 is recorded in D027.
 - [ ] Standard mode remains functional with no new permission and no
-      new dependency.
-- [ ] Build, lint and JVM tests pass in CI (D024).
+      new dependency. Code review confirms no new permission or
+      dependency; runtime check pending.
+- [x] Build, lint and JVM tests pass in CI (D024).
+
+### Verification Record
+- CI run `45966560679` (run 28, commit `773e6b3`): `assembleDebug`,
+  `lintDebug` and `testDebugUnitTest` succeeded.
+- 48/48 JVM tests passed, including 3 new `ThermalInfoTest` cases.
+- Lint: 0 errors, 5 pre-existing warnings.
+- Debug APK: 28,014,367 bytes; sha256
+  `0eee340d44ca4a33f2c61644c7bccc80658b41a06252d2c3f55a640c7cf6552f`.
+- `scripts/check-static.sh`: 101/101 checks before the push.
+- Not verified: GPU identity strings, thermal readings and the
+  unsupported-state labels on a device. These need device verification.
 
 ### Technology Validation
 - Android has no public API for GPU utilization or FPS. The documented
