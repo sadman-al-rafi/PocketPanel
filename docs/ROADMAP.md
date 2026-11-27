@@ -669,8 +669,10 @@ monitoring follow-up; the current tree still needs its own CI run.
 - On-device testing also showed the overlay VPN button bringing the app to
   the foreground. The connect helper Activity now uses a separate task and
   a separate task and a transparent theme with no content, and disconnect
-  is handled directly in the service so no Activity is started. Retest
-  pending.
+  is handled directly in the service so no Activity is started. CI run
+  `46022577030` (run 47, commit `d6a68d9`) verified this state; on-device
+  retest pending. Runs 44 and 46 failed on an intermediate `Theme.NoDisplay`
+  choice and an unavailable KTX drawable call; both were corrected.
 
 ---
 
