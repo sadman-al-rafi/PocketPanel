@@ -2,7 +2,8 @@
 
 ## Overview
 PocketPanel is a native Android utility application featuring a
-floating edge sidebar for system monitoring and quick-access tools.
+floating edge sidebar for system monitoring, network utilities and
+quick-access controls.
 
 The app is designed to be accessible from anywhere on the device
 without requiring the user to leave the currently active application.
@@ -10,7 +11,7 @@ without requiring the user to leave the currently active application.
 ## Core Experience
 A small floating handle sits near a screen edge.
 The user interacts with the handle to reveal a compact panel.
-The panel provides system monitoring information and quick tools.
+The panel provides system monitoring information and network controls.
 The user can dismiss the panel without switching applications.
 
 ## Primary Features
@@ -32,11 +33,11 @@ The user can dismiss the panel without switching applications.
 - Network throughput.
 - Additional supported metrics in future milestones.
 
-### Quick Tools
-- Timer.
-- Stopwatch.
-- Quick notes.
-- Additional tools introduced in future milestones.
+### VPN
+- WireGuard client with configuration import.
+- Connect and disconnect from the app.
+- Real connection status and clear error states.
+- Overlay side-panel on/off control in a later milestone.
 
 ### Customization
 - System, Light and Dark theme.
@@ -61,13 +62,16 @@ The user can dismiss the panel without switching applications.
 - No telemetry by default.
 - No unnecessary permissions.
 - No cloud dependency.
+- WireGuard configurations and private keys stay on the device.
 
 ## Access Modes
 - Standard Android access.
 - Optional Shizuku access.
 - Optional root access.
 
-Standard mode must remain functional without Shizuku or root.
+Standard mode must remain functional without Shizuku or root. The
+WireGuard client uses the standard Android `VpnService` API and does not
+require elevated access.
 
 ## Non-Goals for Initial Release
 - Cloud synchronization.
@@ -77,6 +81,7 @@ Standard mode must remain functional without Shizuku or root.
 - Gaming optimization claims.
 - Automatic modification of system settings.
 - Unsupported or fabricated hardware metrics.
+- VPN accounts, subscriptions or non-WireGuard protocols.
 
 ## Development
 Follow AGENTS.md and docs/ROADMAP.md.

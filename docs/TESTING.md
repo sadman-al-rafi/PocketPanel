@@ -339,9 +339,39 @@ an API newer than 26.
 
 Previously completed functionality must be retested after relevant
 changes. At minimum: overlay permission flow, panel toggle, theme
-persistence, and one monitoring sample per metric.
+persistence, and one monitoring sample per metric. After M6: VPN
+consent, connect, disconnect and revocation.
 
-## 12. Reporting
+## 12. VPN Verification (M6)
+
+Planned; not executed yet. Full tunnel behavior cannot be verified in
+CI because no emulator is provisioned (D016).
+
+Automated (authorized CI):
+- Build with the WireGuard tunnel library and confirm the native
+  libraries are packaged for the supported ABIs.
+- Lint with the VPN service and manifest changes.
+- JVM tests: configuration parsing and validation, profile state
+  mapping, error mapping and secret redaction.
+- Static checks: manifest service wiring, permission allowlist, and no
+  secrets in source or logs.
+
+Manual device verification (user-reported):
+- First connect shows the system VPN consent dialog; denial leaves the
+  UI disconnected.
+- A valid configuration establishes a tunnel; the system VPN indicator
+  and the app notification appear.
+- Disconnect removes the notification and restores normal networking.
+- Revoking the VPN in system settings triggers `onRevoke()` and the app
+  shows disconnected, not connected.
+- Starting another VPN app stops this one and the UI updates.
+- Airplane mode or a network switch does not crash the service, and the
+  state remains accurate.
+- Private keys are absent from logcat, plaintext DataStore and crash
+  output.
+- With the VPN off, monitoring and the overlay still work.
+
+## 13. Reporting
 
 Every test report must state:
 - What was executed, with the command or manual steps.

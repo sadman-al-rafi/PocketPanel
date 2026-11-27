@@ -410,20 +410,81 @@ confirmed that network data and the ping row work on a test device.
 
 ---
 
-## M6 — Quick Tools
+## M6 — WireGuard VPN Client
 Status: [ ] Not started
 
 ### Objectives
-- Timer.
-- Stopwatch.
-- Quick notes.
-- Additional approved tools.
+- Add an embedded WireGuard client using the official
+  `com.wireguard.android:tunnel` library.
+- Import and validate a WireGuard configuration.
+- Connect and disconnect through Android `VpnService` with explicit
+  user consent.
+- Show real connection state and clear error states.
+- Expose a connect/disconnect control and observable state that the
+  overlay side panel can reuse in a later milestone.
+- Keep the feature optional: no root or Shizuku is required, and the
+  rest of the app works while the VPN is off.
+
+### Deliverables
+- `vpn/` package: service, backend adapter, config parser/validator,
+  encrypted profile storage and state model.
+- In-app VPN screen or card: import configuration, connect, disconnect
+  and show status.
+- Manifest service declaration with `BIND_VPN_SERVICE` and the
+  `android.net.VpnService` intent filter; foreground service type
+  `specialUse`; notification channel.
+- Configuration import through the Storage Access Framework or pasted
+  text, so no storage permission is required.
+- Unit tests for config parsing/validation, state mapping and secret
+  redaction.
+- Documentation and a verification record.
 
 ### Acceptance Criteria
-- [ ] Tools are functional.
-- [ ] UI remains consistent.
-- [ ] Tool state behaves appropriately.
-- [ ] Build and tests pass.
+- [ ] A valid WireGuard configuration establishes a real tunnel; no
+      connected state is shown without an established tunnel.
+- [ ] `VpnService.prepare()` consent is requested before the first
+      connection; denial, revocation and `onRevoke()` are handled
+      without a crash or a stale connected state.
+- [ ] Only one VPN connection is active; disconnect stops the service
+      and removes the notification.
+- [ ] Private keys are encrypted at rest with an Android Keystore key
+      and never written to logs, plain DataStore or crash output.
+- [ ] Invalid or incomplete configurations are rejected with a clear
+      error; no partial or fabricated connection state.
+- [ ] The VPN service runs as a foreground service with the required
+      type and notification on API 34+.
+- [ ] Standard mode remains functional with the VPN off; no root or
+      Shizuku dependency.
+- [ ] The connect/disconnect state is exposed through a reusable
+      repository surface for a future overlay button.
+- [ ] Build, lint and JVM tests pass in an authorized CI run.
+
+### Out of Scope for M6
+- The overlay side-panel on/off button. M6 exposes the control
+  surface; the button is added in a later milestone (tracked in M10).
+- Always-on VPN, per-app routing, kill switch, multiple profiles,
+  subscriptions, account services and non-WireGuard protocols.
+
+### Technology Validation (before adding the dependency)
+- Official library: `com.wireguard.android:tunnel:1.0.20260102`
+  (Apache-2.0), verified on Maven Central on 2026-11-27.
+- AAR metadata: `minCompileSdk=1`,
+  `minAndroidGradlePluginVersion=1.0.0`, compatible with the pinned
+  AGP 9.5.2 / compileSdk 37.1.
+- AAR dependencies: `androidx.annotation:1.9.1` and
+  `androidx.collection:1.5.0`.
+- Native ABIs: arm64-v8a, armeabi-v7a, x86 and x86_64. The AAR is about
+  5.8 MB, so the APK will grow; measure the exact delta in CI.
+- Android `VpnService` requirements: `BIND_VPN_SERVICE` service
+  permission, `android.net.VpnService` intent filter, user consent via
+  `VpnService.prepare()`, foreground promotion and a system-managed
+  notification.
+- API 34+ foreground service type: use `specialUse` with
+  `FOREGROUND_SERVICE_SPECIAL_USE` (already declared for the overlay)
+  and a documented subtype.
+- Remaining validation before implementation: confirm the library's
+  Java 8 desugaring need, Kotlin/AGP compatibility and native packaging
+  in the first authorized M6 CI run.
 
 ---
 
@@ -486,6 +547,7 @@ Status: [ ] Not started
 - Card arrangement.
 - Size and positioning options.
 - Monitoring configuration.
+- Overlay side-panel VPN on/off control.
 - Performance optimization.
 - Accessibility improvements.
 
@@ -494,6 +556,8 @@ Status: [ ] Not started
 - [ ] UI remains consistent.
 - [ ] Accessibility reviewed.
 - [ ] Performance reviewed.
+- [ ] VPN control from the overlay reflects the real tunnel state and
+      respects system consent.
 - [ ] Build and tests pass.
 
 ---

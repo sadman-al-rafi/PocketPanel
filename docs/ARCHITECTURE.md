@@ -6,7 +6,7 @@ capabilities and compatible stable technologies.
 This document was populated during M0 (research phase) on 2026-11-25.
 M1 implements the foundation subset described here: Material 3 theme,
 settings persistence and the main/settings screens. Overlay, monitoring
-and tools remain proposed until their milestones.
+and the VPN client remain proposed until their milestones.
 
 Toolchain versions and verification sources are recorded in
 docs/DECISIONS.md. Platform constraints are recorded in sections below.
@@ -47,6 +47,7 @@ docs/DECISIONS.md. Platform constraints are recorded in sections below.
             settings/                 SettingsScreen.kt
           overlay/                    M2+
           monitoring/                 M3+
+          vpn/                        M6+
           permissions/                M2+
           service/                    M2+
         res/                         Themes, strings, icons, adaptive launcher
@@ -188,8 +189,10 @@ purpose-bound. Checked against the official type list:
 - `shortService`: limited to roughly three minutes, cannot be sticky, and
   cannot start other foreground services. Not suitable for a persistent
   overlay.
-- `systemExempted`: only for device owners, profile owners, device
-  admins, VPN apps, emergency-role apps and similar. Not eligible.
+- `systemExempted`: reserved for system apps and specific integrations
+  (device/profile owners, device admins, VPN apps configured in system
+  settings, emergency-role apps and similar). A normally installed VPN
+  client cannot rely on it.
 - `specialUse`: the documented fallback for valid cases not covered by
   another type. Google Play describes it as being for "limited
   scenarios", states that all foreground service types are subject to
@@ -197,9 +200,10 @@ purpose-bound. Checked against the official type list:
   description, a user-impact statement, a selected use case and a
   demonstration video.
 
-Therefore `specialUse` is the only eligible type, but it is not
-automatically acceptable for Play distribution. It is a review risk, not
-a settled fact.
+Therefore `specialUse` is the only eligible type for the overlay, but it
+is not automatically acceptable for Play distribution. It is a review
+risk, not a settled fact. The M6 VPN service also uses `specialUse`; see
+section 13.
 
 Fallback if `specialUse` is not accepted: run the overlay without a
 foreground service, which means the overlay only lives as long as the app
@@ -290,7 +294,8 @@ per-process CPU, GPU utilization, and any fabricated "FPS" reading.
 | `FOREGROUND_SERVICE_SPECIAL_USE` | Manifest | Required from API 34 with the declared service type. |
 | `POST_NOTIFICATIONS` | API 33+, before starting the service | Runtime request; denial does not block the feature, but is shown in settings as a caveat. |
 | `ACCESS_NETWORK_STATE` | Manifest, network provider | Normal permission, no prompt. |
-| `INTERNET` | Manifest, ping probe | Normal permission, no prompt. Required for the platform `ping` process. |
+| `INTERNET` | Manifest, ping probe and VPN | Normal permission, no prompt. Required for the platform `ping` process and the WireGuard tunnel. |
+| `BIND_VPN_SERVICE` | VPN service declaration | Service-level permission; only the system may bind. Not a runtime request. |
 
 No location, storage, contacts, phone state or accessibility permissions
 are used. No `QUERY_ALL_PACKAGES`.
@@ -308,9 +313,12 @@ are used. No `QUERY_ALL_PACKAGES`.
   is clamped again when read, so a corrupt value cannot cause a busy
   loop.
   Corrupt or unreadable data falls back to defaults.
-- No database is required at this stage. Quick notes are stored as
-  DataStore string values until a demonstrated size need justifies
-  Room.
+- M6 stores non-secret WireGuard profile metadata in DataStore. The
+  WireGuard private key is encrypted with an Android Keystore key before
+  it is stored; no plaintext secret is written to DataStore, logs,
+  crash output or backups (`allowBackup=false`).
+- No database is required at this stage. A database is introduced only
+  if a demonstrated size or query need justifies Room.
 
 ## 10. Optional Elevated Access Boundaries
 
@@ -318,6 +326,8 @@ are used. No `QUERY_ALL_PACKAGES`.
   interface, not alternate code paths in the UI.
 - Capability detection is runtime-only: Shizuku binder alive and
   permission granted; root binary present and a test call succeeding.
+- The M6 WireGuard client uses the standard `VpnService` API and does
+  not depend on Shizuku or root.
 - Absence, revocation, or a failed elevated call degrades the affected
   metric to Unavailable and never disables standard mode.
 - Elevated providers live in their own package so they can be audited
@@ -341,3 +351,34 @@ emulator is provisioned (D016).
 - Room, WorkManager, and any scheduled background work.
 - Compose Multiplatform or any non-Android target.
 - Cloud sync, accounts, telemetry.
+- Always-on VPN, per-app routing, kill switch, multiple VPN profiles
+  and non-WireGuard protocols.
+
+## 13. VPN Client (M6)
+
+- The client embeds the official WireGuard tunnel library
+  (`com.wireguard.android:tunnel`) instead of implementing the protocol.
+  The library is wrapped behind a `VpnBackend` interface so the UI and
+  tests never depend on it directly.
+- A `VpnService` subclass owns the Android tunnel interface. The service
+  is declared with `android.permission.BIND_VPN_SERVICE` and the
+  `android.net.VpnService` intent filter, so only the system can bind to
+  it.
+- `VpnService.prepare()` consent is requested before the first connect.
+  Denial or revocation is surfaced as a disconnected state, never a
+  stale connected state. `onRevoke()` closes the tunnel.
+- The service runs in the foreground with a non-dismissible
+  notification. On API 34+ it uses the `specialUse` foreground service
+  type; the overlay already declares `FOREGROUND_SERVICE_SPECIAL_USE`.
+- Configurations are imported through the Storage Access Framework or
+  pasted text, then parsed and validated locally. No storage permission
+  is required.
+- The WireGuard private key is encrypted with an Android Keystore key
+  before storage. Secrets are never logged or included in diagnostics.
+- A `VpnRepository` exposes connection state and connect/disconnect
+  actions. The app UI and, later, the overlay side panel consume the
+  same repository, so the overlay button cannot bypass consent or state
+  handling.
+- Only one VPN can be active per user or profile. Starting another VPN
+  stops this one; the UI reflects the system's actual state.
+- No root or Shizuku is required.

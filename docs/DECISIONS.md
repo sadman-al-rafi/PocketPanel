@@ -924,3 +924,68 @@ Verification: authorized run 45939285640 (run 22, commit `37fab11`)
 passed build, lint and 25/25 JVM tests, including five
 `PingLatencyTest` parser cases. The user confirmed the ping row works
 on a test device.
+
+### D023 — M6 WireGuard VPN Client
+
+Status: Accepted.
+
+Context: M6 was re-scoped by the project owner from quick tools (timer,
+stopwatch, quick notes) to a WireGuard VPN client. The client should
+later be controllable from the overlay side panel. Android exposes a
+VPN API but no public WireGuard implementation, so a protocol
+implementation would have to be embedded.
+
+Decision:
+- Embed the official `com.wireguard.android:tunnel` library
+  (Apache-2.0). Version `1.0.20260102` was verified on Maven Central on
+  2026-11-27. Its AAR metadata declares `minCompileSdk=1` and
+  `minAndroidGradlePluginVersion=1.0.0`; its dependencies are
+  `androidx.annotation:1.9.1` and `androidx.collection:1.5.0`; it
+  packages native libraries for arm64-v8a, armeabi-v7a, x86 and x86_64.
+- Use a `VpnService` subclass with `BIND_VPN_SERVICE` and the
+  `android.net.VpnService` intent filter. Request consent with
+  `VpnService.prepare()` before the first connection and handle
+  `onRevoke()`.
+- Run the service in the foreground with a notification. On API 34+ use
+  the `specialUse` type and `FOREGROUND_SERVICE_SPECIAL_USE` (already
+  declared for the overlay). Do not rely on `systemExempted`, which is
+  reserved for system integrations and VPN apps configured in system
+  settings.
+- Import configurations through the Storage Access Framework or pasted
+  text, so no storage permission is required.
+- Encrypt the WireGuard private key with an Android Keystore key before
+  storage. Store only non-secret profile metadata in DataStore. Never
+  log secrets.
+- Expose connection state and connect/disconnect through a
+  `VpnRepository`. The overlay button is deferred to a later milestone
+  but will reuse this surface.
+- No root or Shizuku; the client works in standard Android mode.
+
+Alternatives considered:
+- Implementing WireGuard in Kotlin: rejected; cryptographic and protocol
+  correctness is out of scope and unsafe.
+- Vendoring `wireguard-go` or writing JNI manually: rejected; the
+  official library already packages and maintains it.
+- A generic tun2socks or OpenVPN client: rejected; the requested
+  protocol is WireGuard.
+- Relying only on the system VPN settings UI: rejected; the app needs
+  its own configuration, status and control surface.
+- Storing the private key as a plain DataStore string: rejected; a
+  private key is a secret and must be encrypted at rest.
+
+Consequences:
+- The APK grows by roughly the AAR size (about 5.8 MB before
+  compression differences) and includes four native ABIs.
+- Android allows one active VPN per user/profile. The app must reflect
+  system state and handle another VPN taking over.
+- The first connection requires a system consent dialog.
+- Full tunnel behavior cannot be verified in CI (no emulator); device
+  verification is user-reported (D016).
+- The first authorized M6 CI run must confirm Java 8 desugaring needs,
+  Kotlin/AGP compatibility and native packaging before further work.
+
+Verified sources (checked 2026-11-27):
+- https://central.sonatype.com/artifact/com.wireguard.android/tunnel
+- https://www.wireguard.com/embedding
+- https://developer.android.com/develop/connectivity/vpn
+- https://developer.android.com/develop/background-work/services/fgs/service-types
