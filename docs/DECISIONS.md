@@ -1157,14 +1157,15 @@ still unverified.
 Date: 2026-11-27
 Status: Accepted (evaluation only).
 
-Context: M7 asks for an evaluation of optional Shizuku integration; M8 is
-the milestone for implementing it.
+Context: M7 asked for an evaluation of optional Shizuku integration. The
+project owner later removed the Shizuku and root milestones from the
+roadmap, so this record documents the evaluation only.
 
 Decision:
 - M7 adds no Shizuku, root or any other elevated code path. All M7
   readings come from standard SDK APIs.
-- Elevated access, if added in M8, must sit behind a capability boundary
-  that reports whether it is available, with a standard-mode
+- Any future elevated access would need to sit behind a capability
+  boundary that reports whether it is available, with a standard-mode
   implementation that needs no extra permission. UI and monitoring code
   must not call Shizuku directly.
 - Shizuku may unlock `/proc` and vendor sysfs readings on devices where
@@ -1177,54 +1178,8 @@ Alternatives considered:
 - Root-only access: rejected; root cannot be assumed.
 
 Consequences: every M7 metric degrades to an explicit unavailable state
-in standard mode. M8 can add an elevated provider without changing the
-monitoring UI.
+in standard mode.
 
-### D028 — Shizuku Integration Details
-
-Date: 2026-11-27
-Status: Accepted.
-
-Context: M8 was authorized to add real CPU usage, GPU information and SoC
-temperature through optional elevated access. D027 already required a
-capability boundary.
-
-Decision:
-- Use `dev.rikka.shizuku:api` and `:provider` version `13.1.5`, the newest
-  stable release on Maven Central. The AAR metadata has no AGP or compile
-  SDK floor; both minSdk values are below the app's minSdk 26.
-- `ShizukuProvider` is declared with a stable authority and protected by
-  `android.permission.INTERACT_ACROSS_USERS_FULL`. This permission is not
-  requested from the user; it prevents other apps from using our provider.
-- All Shizuku calls sit behind `ShizukuCapability`, which tracks binder
-  receipt/death and permission result in a StateFlow. The app never calls
-  Shizuku directly from UI or monitoring code.
-- `ElevatedHardwareAccess` is the only contract the monitoring pipeline
-  knows. `ShizukuHardwareAccess` implements it with a UserService bound
-  by `Shizuku.bindUserService`; the service exposes only raw file reads
-  through AIDL. `newProcess` is private in 13.1.5 and is not used.
-- Real CPU usage replaces the D025 estimate only when a counter sample is
-  actually obtained. SoC temperature uses a discovered thermal zone;
-  GPU load and clock use an ordered list of vendor sysfs candidates and
-  are labelled as driver-specific. Missing files produce "Not available".
-- Permission is requested only after an in-app explanation. Denial,
-  binder death and unbind all fall back to standard readings.
-
-Alternatives considered:
-- `Shizuku.newProcess` with `cat`: rejected; the method is private in the
-  stable API and deprecated.
-- Reflection into hidden Android APIs from the app process: rejected;
-  non-SDK restrictions and device-specific APIs make it fragile.
-- Requiring Shizuku for monitoring: rejected; standard mode is mandatory.
-
-Verified sources (checked 2026-11-27):
-- https://repo1.maven.org/maven2/dev/rikka/shizuku/api/13.1.5/
-- https://github.com/RikkaApps/Shizuku-API (README, `Shizuku.java`,
-  `demo/src/main/aidl/rikka/shizuku/demo/IUserService.aidl`)
-- https://developer.android.com/build/releases/agp-9-0-0-release-notes
-  (AIDL build feature remains explicit in AGP 9)
-
-Consequences: the APK gains the Shizuku AARs and a small AIDL interface.
-UserService runs in a separate process and must be released with its
-reserved destroy transaction. Root (uid 0) and shell (uid 2000) both work;
-shell may still lack access to some vendor nodes.
+Update 2026-11-27: the project owner removed the Shizuku and root
+milestones from the roadmap. D027 remains as the evaluation record only;
+no elevated access integration is planned or in progress.

@@ -72,10 +72,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         settingsRepository = (application as PocketPanelApplication).settingsRepository
-        systemInfoRepository = SystemInfoRepository(
-            context = applicationContext,
-            elevatedAccess = (application as PocketPanelApplication).elevatedHardwareAccess,
-        )
+        systemInfoRepository = SystemInfoRepository(applicationContext)
         networkMonitor = NetworkMonitor(applicationContext)
         vpnRepository = (application as PocketPanelApplication).vpnRepository
         overlayPermissionGranted = OverlayPermission.isGranted(this)
@@ -88,7 +85,6 @@ class MainActivity : ComponentActivity() {
                     systemInfoRepository = systemInfoRepository,
                     networkMonitor = networkMonitor,
                     vpnRepository = vpnRepository,
-                    elevatedAccess = (application as PocketPanelApplication).elevatedHardwareAccess,
                 ),
             )
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -117,8 +113,6 @@ class MainActivity : ComponentActivity() {
                     onVpnDisconnect = viewModel::disconnectVpn,
                     onVpnRemove = viewModel::removeVpnProfile,
                     onVpnDismissMessage = viewModel::dismissVpnMessage,
-                    shizukuStatus = uiState.shizukuStatus,
-                    onRequestShizukuPermission = viewModel::requestShizukuPermission,
                 )
             }
         }

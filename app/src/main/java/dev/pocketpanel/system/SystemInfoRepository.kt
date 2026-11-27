@@ -1,7 +1,6 @@
 package dev.pocketpanel.system
 
 import android.content.Context
-import dev.pocketpanel.elevated.ElevatedHardwareAccess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -16,10 +15,7 @@ import kotlinx.coroutines.isActive
  * Sampling runs on [Dispatchers.Default] and only exists while the flow is
  * collected, so polling stops when the screen is not observing it.
  */
-class SystemInfoRepository(
-    context: Context,
-    private val elevatedAccess: ElevatedHardwareAccess? = null,
-) {
+class SystemInfoRepository(context: Context) {
 
     private val appContext: Context = context.applicationContext
     private val cpuUsageSampler = CpuUsageSampler()
@@ -29,15 +25,10 @@ class SystemInfoRepository(
     fun deviceInfoFlow(intervalMillis: Long): Flow<DeviceInfo> = flow {
         val safeInterval = intervalMillis.coerceAtLeast(MIN_INTERVAL_MILLIS)
         while (currentCoroutineContext().isActive) {
-            val elevated = elevatedAccess?.snapshot()
             val hardware = HardwareSnapshot(
-                // A real counter reading replaces the labelled estimate.
-                cpuUsage = elevated?.cpuUsage ?: cpuUsageSampler.sample(),
+                cpuUsage = cpuUsageSampler.sample(),
                 thermal = thermalProvider.snapshot(),
                 gpu = gpuInfoProvider.info(),
-                socTemperature = elevated?.socTemperature,
-                gpuBusyPercent = elevated?.gpuBusyPercent,
-                gpuClockKhz = elevated?.gpuClockKhz,
             )
             emit(DeviceInfo.load(appContext, hardware))
             delay(safeInterval)

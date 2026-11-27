@@ -46,14 +46,6 @@ data class DeviceInfo(
     val gpuRenderer: String? = null,
     val gpuVendor: String? = null,
     val glVersion: String? = null,
-    /** SoC temperature from a kernel thermal zone, available with elevated access. */
-    val socTemperatureCelsius: Float? = null,
-    /** Kernel name of the selected thermal zone. */
-    val socThermalZone: String? = null,
-    /** Vendor GPU busy percentage, only when the driver exposes a node. */
-    val gpuBusyPercent: Int? = null,
-    /** Vendor GPU clock in kHz, only when the driver exposes a node. */
-    val gpuClockKhz: Long? = null,
 ) {
     companion object {
 
@@ -86,10 +78,6 @@ data class DeviceInfo(
                 gpuRenderer = hardware.gpu?.renderer,
                 gpuVendor = hardware.gpu?.vendor,
                 glVersion = hardware.gpu?.glVersion,
-                socTemperatureCelsius = hardware.socTemperature?.celsius,
-                socThermalZone = hardware.socTemperature?.zoneType,
-                gpuBusyPercent = hardware.gpuBusyPercent,
-                gpuClockKhz = hardware.gpuClockKhz,
             )
         }
 

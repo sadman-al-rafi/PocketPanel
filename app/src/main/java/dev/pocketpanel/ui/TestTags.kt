@@ -17,5 +17,4 @@ object TestTags {
     const val VPN_CONNECT_BUTTON = "vpn_connect_button"
     const val VPN_IMPORT_BUTTON = "vpn_import_button"
     const val VPN_REMOVE_BUTTON = "vpn_remove_button"
-    const val SHIZUKU_PERMISSION_BUTTON = "shizuku_permission_button"
 }

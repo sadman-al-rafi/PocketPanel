@@ -9,8 +9,6 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import dev.pocketpanel.settings.SettingsRepository
 import dev.pocketpanel.settings.ThemeMode
 import dev.pocketpanel.settings.UserPreferences
-import dev.pocketpanel.elevated.ElevatedHardwareAccess
-import dev.pocketpanel.elevated.ShizukuStatus
 import dev.pocketpanel.system.DeviceInfo
 import dev.pocketpanel.system.NetworkInfo
 import dev.pocketpanel.system.NetworkMonitor
@@ -45,7 +43,6 @@ data class PocketPanelUiState(
     /** Latest network sample, or null when monitoring is off or not ready. */
     val networkInfo: NetworkInfo? = null,
     val vpn: VpnUiState = VpnUiState(),
-    val shizukuStatus: ShizukuStatus = ShizukuStatus.Unavailable,
 )
 
 /** VPN profile, tunnel state and the last import message. */
@@ -66,7 +63,6 @@ class PocketPanelViewModel(
     private val systemInfoRepository: SystemInfoRepository,
     private val networkMonitor: NetworkMonitor,
     private val vpnRepository: VpnRepository,
-    private val elevatedAccess: ElevatedHardwareAccess,
 ) : ViewModel() {
 
     private val screen = MutableStateFlow<AppScreen>(AppScreen.Main)
@@ -124,15 +120,13 @@ class PocketPanelViewModel(
         screen,
         monitoring,
         vpn,
-        elevatedAccess.status,
-    ) { preferences, currentScreen, sample, vpnState, shizukuStatus ->
+    ) { preferences, currentScreen, sample, vpnState ->
         PocketPanelUiState(
             preferences = preferences,
             screen = currentScreen,
             deviceInfo = sample?.deviceInfo,
             networkInfo = sample?.networkInfo,
             vpn = vpnState,
-            shizukuStatus = shizukuStatus,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -184,10 +178,6 @@ class PocketPanelViewModel(
         importResult.value = null
     }
 
-    fun requestShizukuPermission() {
-        elevatedAccess.requestPermission()
-    }
-
     companion object {
         private const val STOP_TIMEOUT_MILLIS = 5_000L
 
@@ -196,7 +186,6 @@ class PocketPanelViewModel(
             systemInfoRepository: SystemInfoRepository,
             networkMonitor: NetworkMonitor,
             vpnRepository: VpnRepository,
-            elevatedAccess: ElevatedHardwareAccess,
         ): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 PocketPanelViewModel(
@@ -204,7 +193,6 @@ class PocketPanelViewModel(
                     systemInfoRepository = systemInfoRepository,
                     networkMonitor = networkMonitor,
                     vpnRepository = vpnRepository,
-                    elevatedAccess = elevatedAccess,
                 )
             }
         }

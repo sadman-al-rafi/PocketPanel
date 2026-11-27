@@ -556,8 +556,8 @@ commit `773e6b3`). Device verification of the hardware card pending.
       and 30 show "Not supported on this Android version"; unreadable
       values show "Not available". GPU utilization and FPS are never
       displayed.
-- [ ] Optional elevated access is isolated: M7 adds no Shizuku or root
-      path. The boundary for M8 is recorded in D027.
+- [ ] No elevated access is used: M7 adds no Shizuku or root path; all
+      readings come from standard APIs (D027).
 - [ ] Standard mode remains functional with no new permission and no
       new dependency. Code review confirms no new permission or
       dependency; runtime check pending.
@@ -588,72 +588,6 @@ commit `773e6b3`). Device verification of the hardware card pending.
 - CI build, lint and JVM tests; record the run ID and commit.
 - Device verification of the hardware card on API 26-28, 29 and 30+.
 
-
----
-
-## M8 — Optional Shizuku Integration
-Status: [~] Started 2026-11-27. Shizuku API 13.1.5 and the UserService
-path verified; implementation pending CI and device verification.
-
-### Objectives
-- Research supported Shizuku APIs.
-- Implement approved optional integration.
-- Provide capability detection.
-- Handle Shizuku unavailable or revoked states.
-
-### Deliverables
-- Shizuku API and provider 13.1.5, verified stable on Maven Central;
-  `ShizukuProvider` declared in the app manifest.
-- `elevated/` package: capability detection, permission request, an
-  `ElevatedHardwareAccess` boundary, and a Shizuku user service with a
-  small AIDL file-reading interface.
-- Real `/proc/stat` counter deltas replacing the labelled CPU estimate
-  when elevated access is granted.
-- SoC temperature from a discovered kernel thermal zone, and GPU
-  load/clock from vendor sysfs nodes when they exist.
-- Hardware card status for Shizuku unavailable, permission needed and
-  active, with an explanation before requesting permission.
-- JVM tests for elevated parsing logic and documentation.
-
-### Acceptance Criteria
-- [ ] Shizuku is optional: all readings work in standard mode.
-- [ ] Standard mode remains functional with no permission prompt.
-- [ ] Integration is permission-aware: consent is requested explicitly,
-      and denial or binder death falls back without a stale reading.
-- [ ] Real readings come from actual counters/sysfs files; unreadable
-      nodes show "Not available" and are never estimated.
-- [ ] Build, lint and JVM tests pass in CI (D024).
-
-### Technology Validation
-- Shizuku API/provider `13.1.5` is the newest stable Maven Central
-  release; AAR metadata declares `minCompileSdk=1` and no AGP floor. API
-  minSdk 24, provider minSdk 23 — both below the app's minSdk 26.
-- `Shizuku.newProcess` is private in 13.1.5 and planned for removal; the
-  supported `UserService` path is used instead (D028).
-- UserService needs AIDL (`buildFeatures.aidl = true`) and a stable tag.
-  No new Android runtime permission is requested from the user.
-
-### Verification Requirements
-- Local static checks before pushing.
-- CI build, lint and JVM tests; record the run ID and commit.
-- Device verification: standard mode, permission grant/denial, Shizuku
-  stopped while in use, and the three new readings.
-
----
-
-## M9 — Optional Root Integration
-Status: [ ] Not started
-
-### Objectives
-- Evaluate useful root-only metrics.
-- Implement approved root providers.
-- Isolate root-specific functionality.
-
-### Acceptance Criteria
-- [ ] Root is optional.
-- [ ] Standard mode remains functional.
-- [ ] Root access is handled transparently.
-- [ ] Build and tests pass.
 
 ---
 

@@ -339,7 +339,10 @@ an API newer than 26.
   disabled.
 - Check memory after 50 open/close cycles for growth.
 
-## 10. Elevated Access Verification (future milestones)
+## 10. Elevated Access (not scheduled)
+
+Shizuku and root integration are not on the roadmap; these checks are
+retained only as constraints if that ever changes.
 
 - Standard mode fully functional with Shizuku absent and no root.
 - Shizuku present but permission denied: metric unavailable, no crash.

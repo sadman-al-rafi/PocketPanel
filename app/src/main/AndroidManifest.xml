@@ -5,11 +5,8 @@
         M2 uses the overlay window, a special-use foreground service and a
         user-visible service notification. M5 reads the active network
         transport and device-wide traffic counters, and runs the platform
-        `ping` command. M8 adds the optional Shizuku provider; the
-        INTERACT_ACROSS_USERS_FULL permission only protects that provider
-        from other apps and is not granted to PocketPanel.
-        ACCESS_NETWORK_STATE and INTERNET are normal permissions and show
-        no prompt. No other permissions are needed.
+        `ping` command. ACCESS_NETWORK_STATE and INTERNET are normal
+        permissions and show no prompt. No other permissions are needed.
     -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -45,15 +42,6 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="floating panel overlay controlled by the user" />
         </service>
-
-        <!-- Optional Shizuku/Sui binder discovery. -->
-        <provider
-            android:name="rikka.shizuku.ShizukuProvider"
-            android:authorities="${applicationId}.shizuku"
-            android:enabled="true"
-            android:exported="true"
-            android:multiprocess="false"
-            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
     </application>
 
 </manifest>
