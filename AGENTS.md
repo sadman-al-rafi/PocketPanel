@@ -200,29 +200,27 @@ Never start the next milestone without explicit authorization.
 
 ## 13. CI Authorization Policy — Mandatory
 
-Remote CI consumes shared time and must be requested, not assumed.
+CI runs on push. The project owner enabled push-triggered verification
+on 2026-11-27 (D024); this supersedes the earlier manual-only rule.
 
-1. NEVER trigger a GitHub Actions workflow automatically.
-2. Pushing commits to the repository is allowed and does not require
-   permission, because the workflow is manual-only and a push cannot
-   start CI. Never create a pull request or take any other action
-   specifically intended to trigger CI without explicit permission.
-3. Do not use `git push` to find out whether the build works.
+1. Pushing commits to `main` is allowed and starts
+   `.github/workflows/verify-toolchain.yml`.
+2. Never create a pull request or add `pull_request` or `schedule`
+   triggers to run CI.
+3. Do not push solely to discover whether the build works. Run
+   `scripts/check-static.sh`, review the change and diagnose locally
+   first.
 4. Local checks that do not trigger remote CI are allowed and expected.
-5. Before requesting CI permission, explain exactly what needs testing,
-   why it is worth testing now and which workflow will run.
-6. Wait for explicit approval before triggering any remote workflow.
-7. This policy applies to every milestone and session until the user
-   explicitly changes it.
+5. Do not repeatedly retry a failed run. Diagnose the failure, apply the
+   smallest appropriate fix and push the fix.
+6. Generate the debug APK through CI.
+7. Report CI results only from a run that actually completed, and state
+   the run ID and commit.
 
 Workflow requirements:
-- `.github/workflows/verify-toolchain.yml` is manual-only
-  (`workflow_dispatch`). Do not add `push`, `pull_request` or `schedule`
+- `.github/workflows/verify-toolchain.yml` triggers on `push` to `main`
+  and on `workflow_dispatch`. Do not add `pull_request` or `schedule`
   triggers.
 - The workflow performs the build, lint and unit tests. No emulator
   installation, AVD creation or emulator boot is part of CI.
-- Do not repeatedly retry a failed run. Diagnose locally, explain the
-  change and request a new run.
-- Generate a debug APK only through an authorized CI run.
-- Report CI results only from a run that actually completed, and state
-  the run ID.
+- The workflow publishes results to the `ci-results` branch.

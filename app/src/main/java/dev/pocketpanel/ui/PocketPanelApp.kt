@@ -1,5 +1,6 @@
 package dev.pocketpanel.ui
 
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +24,11 @@ fun PocketPanelApp(
     onRequestOverlayPermission: () -> Unit,
     onMonitoringEnabledChange: (Boolean) -> Unit,
     onMonitoringIntervalChange: (Int) -> Unit,
+    onVpnImportConfig: (Uri) -> Unit,
+    onVpnConnect: () -> Unit,
+    onVpnDisconnect: () -> Unit,
+    onVpnRemove: () -> Unit,
+    onVpnDismissMessage: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -40,6 +46,12 @@ fun PocketPanelApp(
                 networkInfo = uiState.networkInfo,
                 onMonitoringEnabledChange = onMonitoringEnabledChange,
                 onMonitoringIntervalChange = onMonitoringIntervalChange,
+                vpn = uiState.vpn,
+                onVpnImportConfig = onVpnImportConfig,
+                onVpnConnect = onVpnConnect,
+                onVpnDisconnect = onVpnDisconnect,
+                onVpnRemove = onVpnRemove,
+                onVpnDismissMessage = onVpnDismissMessage,
             )
 
             AppScreen.Settings -> {

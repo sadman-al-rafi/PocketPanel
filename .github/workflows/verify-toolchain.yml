@@ -1,8 +1,11 @@
 name: Verify build and app
 
-# Manual only. This workflow must never run automatically: CI is authorized
-# run-by-run by the project owner (AGENTS.md section 13, D016).
+# CI runs on every push to main and can also be started manually.
+# Pull requests and schedules do not trigger it (AGENTS.md section 13, D024).
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -10,7 +13,7 @@ permissions:
 
 concurrency:
   group: verify-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:

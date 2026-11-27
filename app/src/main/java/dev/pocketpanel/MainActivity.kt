@@ -1,6 +1,7 @@
 package dev.pocketpanel
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -26,6 +27,7 @@ import dev.pocketpanel.system.SystemInfoRepository
 import dev.pocketpanel.ui.PocketPanelApp
 import dev.pocketpanel.ui.PocketPanelViewModel
 import dev.pocketpanel.ui.theme.PocketPanelTheme
+import dev.pocketpanel.vpn.VpnRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,6 +41,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var systemInfoRepository: SystemInfoRepository
     private lateinit var networkMonitor: NetworkMonitor
+    private lateinit var vpnRepository: VpnRepository
 
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -54,6 +57,16 @@ class MainActivity : ComponentActivity() {
         // notification. The overlay itself keeps working.
     }
 
+    private val vpnConsentLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            vpnRepository.connect()
+        } else {
+            vpnRepository.onConsentDenied()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -61,6 +74,7 @@ class MainActivity : ComponentActivity() {
         settingsRepository = (application as PocketPanelApplication).settingsRepository
         systemInfoRepository = SystemInfoRepository(applicationContext)
         networkMonitor = NetworkMonitor(applicationContext)
+        vpnRepository = (application as PocketPanelApplication).vpnRepository
         overlayPermissionGranted = OverlayPermission.isGranted(this)
         notificationPermissionGranted = areNotificationsGranted()
 
@@ -70,6 +84,7 @@ class MainActivity : ComponentActivity() {
                     settingsRepository = settingsRepository,
                     systemInfoRepository = systemInfoRepository,
                     networkMonitor = networkMonitor,
+                    vpnRepository = vpnRepository,
                 ),
             )
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -93,6 +108,11 @@ class MainActivity : ComponentActivity() {
                     onRequestOverlayPermission = ::requestOverlayPermission,
                     onMonitoringEnabledChange = viewModel::setMonitoringEnabled,
                     onMonitoringIntervalChange = viewModel::setMonitoringIntervalSeconds,
+                    onVpnImportConfig = viewModel::importVpnConfig,
+                    onVpnConnect = ::requestVpnConnect,
+                    onVpnDisconnect = viewModel::disconnectVpn,
+                    onVpnRemove = viewModel::removeVpnProfile,
+                    onVpnDismissMessage = viewModel::dismissVpnMessage,
                 )
             }
         }
@@ -164,6 +184,26 @@ class MainActivity : ComponentActivity() {
                 R.string.overlay_permission_unavailable,
                 Toast.LENGTH_LONG,
             ).show()
+        }
+    }
+
+    private fun requestVpnConnect() {
+        val consentIntent = try {
+            vpnRepository.prepareIntent()
+        } catch (error: Exception) {
+            Log.e(TAG, "Unable to request VPN consent", error)
+            vpnRepository.onConsentDenied()
+            return
+        }
+        if (consentIntent == null) {
+            vpnRepository.connect()
+            return
+        }
+        try {
+            vpnConsentLauncher.launch(consentIntent)
+        } catch (error: Exception) {
+            Log.e(TAG, "Unable to show the VPN consent dialog", error)
+            vpnRepository.onConsentDenied()
         }
     }
 

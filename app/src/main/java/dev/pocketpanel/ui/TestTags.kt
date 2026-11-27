@@ -13,4 +13,8 @@ object TestTags {
     const val OVERLAY_SWITCH = "overlay_switch"
     const val OVERLAY_PERMISSION_BUTTON = "overlay_permission_button"
     const val MONITORING_TOGGLE = "monitoring_toggle"
+    const val VPN_STATUS = "vpn_status"
+    const val VPN_CONNECT_BUTTON = "vpn_connect_button"
+    const val VPN_IMPORT_BUTTON = "vpn_import_button"
+    const val VPN_REMOVE_BUTTON = "vpn_remove_button"
 }

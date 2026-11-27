@@ -5,22 +5,23 @@ unavailable test is reported as such, never implied to have passed.
 
 ## 1. CI Authorization
 
-Remote CI is manual and opt-in (AGENTS.md section 13, D016).
+CI runs on every push to `main` (AGENTS.md section 13, D024).
 
-- `.github/workflows/verify-toolchain.yml` has a single
-  `workflow_dispatch` trigger. It must not be triggered by `push`,
+- `.github/workflows/verify-toolchain.yml` triggers on `push` to `main`
+  and on `workflow_dispatch`. It must not be triggered by
   `pull_request` or `schedule`.
-- No workflow is started, and no commit is pushed for the purpose of
-  starting one, without explicit user permission for that run.
-- Before asking for permission, state what will be tested, why it is
-  worth testing at that point, and which workflow will run.
-- A failed run is diagnosed locally first. Do not retry repeatedly.
-- CI is not used as a way to discover whether the code compiles during
-  normal development. Local static checks (section 2) cover what they
-  can without a JDK or Android SDK.
+- A push starts the build, lint and JVM tests automatically. Results
+  are published to the `ci-results` branch.
+- Do not push solely to discover whether the code compiles. Run
+  `scripts/check-static.sh`, review the change and diagnose locally
+  first.
+- A failed run is diagnosed from its logs first. Do not retry
+  repeatedly; push the smallest fix.
+- CI is not a substitute for local static checks (section 2), which
+  cover what they can without a JDK or Android SDK.
 
-CI runs only when the project owner authorizes it, typically when a
-milestone is functionally complete or a build/APK is needed.
+The debug APK is produced by CI, and every reported result must come
+from a run that actually completed.
 
 ## 2. Local Static Verification
 
@@ -347,7 +348,7 @@ consent, connect, disconnect and revocation.
 Planned; not executed yet. Full tunnel behavior cannot be verified in
 CI because no emulator is provisioned (D016).
 
-Automated (authorized CI):
+Automated (CI on push):
 - Build with the WireGuard tunnel library and confirm the native
   libraries are packaged for the supported ABIs.
 - Lint with the VPN service and manifest changes.

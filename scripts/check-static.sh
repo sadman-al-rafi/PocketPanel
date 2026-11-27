@@ -4,8 +4,8 @@
 #
 # Runs without a JDK, Android SDK, Gradle or network access. It verifies
 # structure and cross-references only; it cannot prove that the code
-# compiles or that the UI renders. Build and unit-test verification
-# requires an authorized CI run (AGENTS.md section 13, docs/TESTING.md).
+# compiles or that the UI renders. Build and unit-test verification runs
+# in CI on push (AGENTS.md section 13, docs/TESTING.md).
 #
 # Usage: scripts/check-static.sh
 set -uo pipefail
@@ -391,8 +391,14 @@ else
     fail "workflow has no workflow_dispatch trigger"
 fi
 
-if grep -qE '^  (push|pull_request|schedule):' "$workflow"; then
-    fail "workflow must not run automatically (push/pull_request/schedule)"
+if grep -qE '^  push:' "$workflow"; then
+    ok
+else
+    fail "workflow has no push trigger (D024)"
+fi
+
+if grep -qE '^  (pull_request|schedule):' "$workflow"; then
+    fail "workflow must not run on pull requests or schedules"
 else
     ok
 fi

@@ -599,7 +599,8 @@ Consequences:
 ### D016 — CI Is Manual and Emulator Testing Is Suspended
 
 Date: 2026-11-25
-Status: Accepted (user-directed).
+Status: Accepted (user-directed). The manual-only trigger was superseded
+by D024 on 2026-11-27; the emulator suspension remains in force.
 
 Decision:
 - `.github/workflows/verify-toolchain.yml` is manual-only
@@ -989,3 +990,28 @@ Verified sources (checked 2026-11-27):
 - https://www.wireguard.com/embedding
 - https://developer.android.com/develop/connectivity/vpn
 - https://developer.android.com/develop/background-work/services/fgs/service-types
+
+### D024 — CI Runs on Push
+
+Date: 2026-11-27
+Status: Accepted (user-directed).
+
+Context: The project owner asked to restore the push trigger and
+delegated continuous execution. D016 made CI manual-only; that trigger
+policy no longer matches the requested workflow.
+
+Decision:
+- `.github/workflows/verify-toolchain.yml` triggers on `push` to `main`
+  and on `workflow_dispatch`.
+- No `pull_request` or `schedule` trigger.
+- Concurrency cancels an older run for the same ref.
+- The workflow continues to build, lint, run JVM tests, publish results
+  to `ci-results`, and upload the debug APK.
+- Emulator testing remains suspended (D016).
+- Local static checks and code review still come before a push; CI is
+  not a substitute for diagnosing obvious failures.
+
+Consequences:
+- Every push to `main` consumes a CI run and publishes a new result.
+- Reports must state the run ID and commit.
+- Force-pushing `ci-results` is expected and is part of the workflow.

@@ -484,7 +484,7 @@ Status: [ ] Not started
   and a documented subtype.
 - Remaining validation before implementation: confirm the library's
   Java 8 desugaring need, Kotlin/AGP compatibility and native packaging
-  in the first authorized M6 CI run.
+  in the first M6 CI run.
 
 ---
 

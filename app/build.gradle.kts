@@ -27,12 +27,17 @@ android {
     }
 
     compileOptions {
+        // The WireGuard tunnel library uses java.time and List.of. The
+        // desugared library supplies them below the platform API level.
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
 }
 
 dependencies {
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
+
     implementation(platform(libs.compose.bom))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
@@ -40,6 +45,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.savedstate)
     implementation(libs.androidx.datastore.preferences)
+
+    // Official WireGuard tunnel library. It declares the VpnService and
+    // packages the native backend for every supported ABI.
+    implementation(libs.wireguard.tunnel)
 
     implementation(libs.compose.foundation)
     implementation(libs.compose.ui)

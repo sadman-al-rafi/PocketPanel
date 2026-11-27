@@ -1,5 +1,6 @@
 package dev.pocketpanel.ui.main
 
+import android.net.Uri
 import android.os.BatteryManager
 import android.text.format.Formatter
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +41,7 @@ import dev.pocketpanel.system.NetworkInfo
 import dev.pocketpanel.system.NetworkTransport
 import dev.pocketpanel.system.PING_HOST
 import dev.pocketpanel.ui.TestTags
+import dev.pocketpanel.ui.VpnUiState
 import dev.pocketpanel.ui.labelRes
 import dev.pocketpanel.ui.theme.isDynamicColorAvailable
 
@@ -56,6 +58,12 @@ fun MainScreen(
     networkInfo: NetworkInfo? = null,
     onMonitoringEnabledChange: (Boolean) -> Unit = {},
     onMonitoringIntervalChange: (Int) -> Unit = {},
+    vpn: VpnUiState = VpnUiState(),
+    onVpnImportConfig: (Uri) -> Unit = {},
+    onVpnConnect: () -> Unit = {},
+    onVpnDisconnect: () -> Unit = {},
+    onVpnRemove: () -> Unit = {},
+    onVpnDismissMessage: () -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -108,6 +116,14 @@ fun MainScreen(
                         networkInfo = networkInfo,
                         onMonitoringEnabledChange = onMonitoringEnabledChange,
                         onMonitoringIntervalChange = onMonitoringIntervalChange,
+                    )
+                    VpnCard(
+                        vpn = vpn,
+                        onImportConfig = onVpnImportConfig,
+                        onConnect = onVpnConnect,
+                        onDisconnect = onVpnDisconnect,
+                        onRemove = onVpnRemove,
+                        onDismissMessage = onVpnDismissMessage,
                     )
                 }
             }

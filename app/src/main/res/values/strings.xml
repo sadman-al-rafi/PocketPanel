@@ -86,4 +86,42 @@
     <string name="network_transport_none">Not connected</string>
     <string name="network_ping">Ping (%1$s)</string>
     <string name="network_ping_value">%1$d ms</string>
+
+    <!-- M6 WireGuard VPN -->
+    <string name="vpn">WireGuard VPN</string>
+    <string name="vpn_description">Connect through an imported WireGuard configuration.</string>
+    <string name="vpn_no_profile">No configuration imported.</string>
+    <string name="vpn_import">Import configuration</string>
+    <string name="vpn_replace">Replace configuration</string>
+    <string name="vpn_remove">Remove configuration</string>
+    <string name="vpn_connect">Connect</string>
+    <string name="vpn_disconnect">Disconnect</string>
+    <string name="vpn_connecting">Connecting…</string>
+    <string name="vpn_connected">Connected</string>
+    <string name="vpn_disconnected">Disconnected</string>
+    <string name="vpn_endpoint">Endpoint: %1$s</string>
+    <string name="vpn_address">Address: %1$s</string>
+    <string name="vpn_privacy_note">The configuration is stored encrypted on this device. Android asks for VPN permission the first time you connect.</string>
+    <string name="vpn_dismiss">Dismiss</string>
+    <string name="vpn_error_no_profile">Import a configuration first.</string>
+    <string name="vpn_error_invalid_profile">The stored configuration is not valid. Import it again.</string>
+    <string name="vpn_error_unreadable_profile">The stored configuration could not be read. Import it again.</string>
+    <string name="vpn_error_not_authorized">VPN permission was not granted. Tap Connect to try again.</string>
+    <string name="vpn_error_activation">The tunnel could not be started. Check the configuration and try again.</string>
+    <string name="vpn_error_unknown">The VPN reported an unexpected error.</string>
+    <string name="vpn_error_empty">The selected file is empty.</string>
+    <string name="vpn_error_too_large">The selected file is too large.</string>
+    <string name="vpn_error_unreadable_file">The selected file could not be read.</string>
+    <string name="vpn_error_storage">The configuration could not be saved on this device.</string>
+    <string name="vpn_error_missing_interface">The configuration has no [Interface] section.</string>
+    <string name="vpn_error_missing_private_key">The [Interface] section has no PrivateKey.</string>
+    <string name="vpn_error_missing_peer">The configuration has no [Peer] section.</string>
+    <string name="vpn_error_missing_public_key">A [Peer] section has no PublicKey.</string>
+    <string name="vpn_error_missing_address">The [Interface] section has no Address.</string>
+    <string name="vpn_error_missing_endpoint">A [Peer] section has no Endpoint.</string>
+    <string name="vpn_error_invalid_key">A key in the configuration is not valid.</string>
+    <string name="vpn_error_invalid_value">A value in the configuration is not valid.</string>
+    <string name="vpn_error_syntax">The configuration has a syntax error.</string>
+    <string name="vpn_error_unknown_attribute">The configuration contains an unknown setting.</string>
+    <string name="vpn_error_other">The configuration could not be parsed.</string>
 </resources>
