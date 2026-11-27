@@ -604,14 +604,39 @@ verification.
 - Performance optimization.
 - Accessibility improvements.
 
+### Deliverables
+- Persisted `HandleSize` (compact/normal) and `MainCardLayout`
+  (standard/focus/minimal) preferences in DataStore.
+- Settings screen sections for main-screen layout, handle size, handle
+  edge and monitoring enable/interval.
+- Main screen filters cards according to the selected layout.
+- Overlay panel shows the shared VPN state and a connect/disconnect
+  button. Consent is requested by `VpnToggleActivity`, which is launched
+  from the overlay and finishes after the system result.
+- Overlay window resizes when the handle size or edge changes.
+- JVM tests for the new preference enums.
+- Documentation and verification record.
+
 ### Acceptance Criteria
-- [ ] Settings persist.
-- [ ] UI remains consistent.
-- [ ] Accessibility reviewed.
-- [ ] Performance reviewed.
+- [ ] Settings persist across process restart (DataStore keys).
+- [ ] UI remains consistent: all layout presets use the same Material 3
+      cards and the main VPN card is always available.
+- [ ] Accessibility reviewed: overlay VPN button has a 48dp minimum
+      height, settings options are 64dp rows with radio/switch roles,
+      and the handle keeps its content description.
+- [ ] Performance reviewed: monitoring is sampled only while the app UI
+      observes it; the overlay observes only settings and VPN state and
+      does not start a separate polling loop.
 - [ ] VPN control from the overlay reflects the real tunnel state and
-      respects system consent.
-- [ ] Build and tests pass.
+      respects system consent: consent is launched for result before the
+      first connect, and denial leaves the UI disconnected.
+- [ ] Build and tests pass in CI (D024).
+
+### Verification Requirements
+- Local static checks before pushing.
+- CI build, lint and JVM tests; record the run ID and commit.
+- Device verification: layout presets, handle size/edge, settings
+  persistence, and overlay connect/disconnect with consent.
 
 ---
 

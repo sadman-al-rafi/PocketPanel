@@ -407,7 +407,25 @@ Manual device verification (user-reported, pending):
 - With monitoring off, the card states that monitoring must be enabled.
 - Standard mode still works with no Shizuku or root setup.
 
-## 14. Reporting
+## 14. Customization Verification (M10)
+
+Automated (executed after CI):
+- Build, lint and JVM tests for the new settings enums and the overlay
+  wiring; record the run ID and commit.
+- `scripts/check-static.sh` covers persisted keys, settings options, the
+  consent Activity and the shared VPN state.
+
+Manual device verification (user-reported, pending):
+- Each main-screen layout preset shows the expected cards and persists
+  after a process restart.
+- Compact and normal handle sizes resize the handle and panel; changing
+  the edge moves the handle without resetting its vertical position.
+- Monitoring enable/interval changes in settings are saved.
+- The overlay VPN row shows the real connection state. First connect
+  opens the system consent dialog; denial leaves it disconnected; a
+  granted consent starts the tunnel; disconnect works from the overlay.
+
+## 15. Reporting
 
 Every test report must state:
 - What was executed, with the command or manual steps.

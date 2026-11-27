@@ -1183,3 +1183,42 @@ in standard mode.
 Update 2026-11-27: the project owner removed the Shizuku and root
 milestones from the roadmap. D027 remains as the evaluation record only;
 no elevated access integration is planned or in progress.
+
+### D029 — Panel Customization and Overlay VPN Control
+
+Date: 2026-11-27
+Status: Accepted.
+
+Context: M10 requires panel customization, size/positioning options and
+an overlay side-panel VPN control that respects system consent.
+
+Decision:
+- Use two small persisted enums instead of a generic rule engine:
+  `HandleSize` (compact/normal) and `MainCardLayout`
+  (standard/focus/minimal). Unknown stored values fall back to defaults.
+- Keep all existing settings in the same DataStore and expose them via
+  `SettingsRepository`; no new persistence library.
+- Overlay VPN state comes from the same `VpnRepository` used by the app,
+  observed by `OverlayService` with `combine(preferences, state, profile)`.
+  There is no second connection path.
+- The overlay button starts a transparent `VpnToggleActivity` with
+  `FLAG_ACTIVITY_NEW_TASK`. That Activity calls `VpnService.prepare()`
+  for result, connects on approval, records denial and then finishes.
+  Disconnecting does not re-request consent.
+- Overlay window size is derived from `HandleSize`; changing size or edge
+  in settings re-anchors the window without moving the persisted vertical
+  fraction.
+
+Alternatives considered:
+- Running the consent flow from the service: rejected; the consent intent
+  must be launched for result from an Activity.
+- A separate VPN state store for the overlay: rejected; it could show a
+  stale connected state.
+- Per-card visibility switches: deferred; layout presets cover the
+  requested customization with less state to maintain.
+
+Consequences: the overlay may briefly show a translucent Activity during
+consent. Starting an Activity from a service is subject to Android's
+background-start restrictions; the visible overlay is the mitigating
+condition, and device verification is required. Performance is unchanged
+because the overlay adds no polling loop.

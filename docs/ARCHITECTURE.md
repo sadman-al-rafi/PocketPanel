@@ -395,3 +395,22 @@ emulator is provisioned (D016).
 - Only one VPN can be active per user or profile. Starting another VPN
   stops this one; the UI reflects the system's actual state.
 - No root or Shizuku is required.
+
+## 14. Customization (M10)
+
+- `HandleSize` and `MainCardLayout` are small persisted enums read through
+  `SettingsRepository`. `UserPreferences` carries them to both the app UI
+  and `OverlayService`; no second settings source exists.
+- `MainScreen` selects cards from `MainCardLayout`. The VPN card is never
+  hidden, so configuration import remains available in every preset.
+- `OverlayWindowController` derives its window size from `HandleSize` and
+  re-anchors on size or edge changes. The vertical fraction is preserved.
+- The overlay VPN button observes `VpnRepository.state` and `profile`
+  through `OverlayService`, so it cannot show a state the app disagrees
+  with. The button starts `VpnToggleActivity`, which handles
+  `VpnService.prepare()` for result before connecting.
+- Accessibility: overlay VPN action has a 48dp minimum height; settings
+  rows are at least 64dp with radio/switch semantics; the handle keeps
+  its content description.
+- Performance: the overlay collects settings and VPN state only and does
+  not sample monitoring; monitoring remains tied to app UI observation.
