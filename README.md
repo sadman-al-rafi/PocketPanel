@@ -5,8 +5,6 @@ Compose (Material 3). A small floating handle sits on a screen edge; tapping
 it opens a compact side panel with live system readings and a WireGuard VPN
 control, without leaving the current app.
 
-The project is complete: all roadmap milestones through M11 (Final
-Verification) are finished. Version `0.1.0` (`versionCode 1`).
 
 ## Features
 
